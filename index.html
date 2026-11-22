@@ -64,10 +64,14 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 .evbox h2{margin:0 0 .3rem;font-size:1.4rem;font-weight:800}.evbox p{margin:0 0 .8rem;color:var(--mu)}
 .evg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem}
 .cl{height:220px;overflow:auto;border:2px solid var(--ln);border-radius:14px;padding:.5rem .7rem;background:var(--sf);margin:.4rem 0}.cl p{margin:.2rem 0}
-.vr{display:flex;gap:.4rem;justify-content:center}
-.vb{font-size:1.5rem;padding:.4rem .9rem;border-radius:12px;border:2px solid transparent;cursor:pointer;color:#fff}
-.vu{background:#2e9e4f}.vn{background:#8a86b0}.vd2{background:#d63a3a}.vh{background:#f0a6c0}
-.vr.has .vb:not(.vh):not(.on){opacity:.4}.vb.on{box-shadow:0 0 0 3px var(--tx)}.vb:disabled{opacity:.35;cursor:default}
+.vr{display:flex;flex-wrap:wrap;gap:.5rem}
+.vb{flex:1 1 28%;min-height:56px;font:800 1rem "Bricolage Grotesque",system-ui,sans-serif;line-height:1.2;padding:.4rem .3rem;border-radius:14px;border:3px solid transparent;cursor:pointer;color:#fff;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.vb .ic{font-size:1.7rem;line-height:1}
+.vu{background:#1f8a43}.vn{background:#6d6a91}.vd2{background:#c62f2f}.vh{background:#d63a7a;flex:1 1 100%;flex-direction:row;gap:.5rem}
+.vr.has .vb:not(.vh):not(.on){opacity:.45}
+.vb.on{border-color:var(--tx);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--tx);transform:scale(1.03)}
+.vb.on::after{content:"✓";font-size:1.1rem}
+.vb:disabled{opacity:.35;cursor:default}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
@@ -341,24 +345,24 @@ function multi(st,say,hub){
  const startRound=async(r,t)=>{tm&&tm.stop();round=r;ti=t[me];subs={};votes={};phase="edit";
   const im=await getIm(ti),E=editor(st,{im,col:K[ti]});let sent=false;
   $("#ex").innerHTML='<button class="btn" id="dn">Fertig</button>'+(host?'<button class="btn" id="sk">Sofort weiter</button>':'');
-  const send=()=>{if(sent)return;sent=true;tm.stop();E.lock();$("#cc").innerHTML='<p class="q">Eingereicht. Warte auf die anderen …</p>'+(host?'<button class="btn" id="sk">Sofort weiter</button>':'');if(host)$("#sk").onclick=skip;
-   const sp=E.spec();if(host){const c0=clean(sp);c0.t=tmpl[0];subs[0]=c0;chk()}else hub.emit("sub",{s:sp})};
+  const send=()=>{if(sent)return;sent=true;tm.stop();const sp=E.spec();E.lock();$("#cc").innerHTML='<p class="q">Eingereicht. Warte auf die anderen …</p>'+(host?'<button class="btn" id="sk">Sofort weiter</button>':'');if(host)$("#sk").onclick=skip;
+   if(host){const c0=clean(sp);c0.t=tmpl[0];subs[0]=c0;chk()}else hub.emit("sub",{s:sp})};
   tm=timer($("#tb"),TL,send);$("#dn").onclick=send;fn=send;if(host)$("#sk").onclick=skip;
   say(`Runde ${r} von ${R}. Jeder bekommt ein anderes Meme.`);
   if(host)setTimeout(()=>{if(phase=="edit"&&round==r)openVote()},(TL+6)*1000)};
  const skip=()=>{const p0=phase,r0=round;hub.emit("force",{});fn&&fn();
   setTimeout(()=>{if(round==r0&&phase==p0){p0=="edit"?openVote():score()}},1500)};
  const showVote=async o=>{last=o;phase="vote";await Promise.all(Object.values(o).map(x=>getIm(x.t)));
-  st.innerHTML='<div class="mt"><div id="tb"></div><p class="q">Bewerte die Memes</p><p style="text-align:center;color:var(--mu);margin:0">👍 +1000, 😐 +50, 👎 −1000. Dazu einmal pro Runde 🥰 für weitere +1000.</p><div class="vg" id="vg"></div><div class="bar"><button class="btn" id="vd">Fertig</button>'+(host?'<button class="btn" id="sk">Sofort weiter</button>':'')+'</div></div>';
+  st.innerHTML='<div class="mt"><div id="tb"></div><p class="q">Bewerte die Memes</p><p style="text-align:center;color:var(--mu);margin:0">Tippe unter jedem Meme auf eine Bewertung. Das 🥰 gibt es nur einmal pro Runde und zählt zusätzlich.</p><div class="vg" id="vg"></div><div class="bar"><button class="btn" id="vd">Fertig</button>'+(host?'<button class="btn" id="sk">Sofort weiter</button>':'')+'</div></div>';
   const sel={};let heart=null,sent=false;const hbs=[];
   Object.keys(o).forEach(k=>{const id=+k,c=document.createElement("div"),cv=document.createElement("canvas");c.className="vc";const im=IM[o[k].t];fit(cv,im,600);paint(cv,im,o[k]);c.append(cv);
    if(id==me){const p=document.createElement("p");p.textContent="Dein Meme";c.append(p)}
    else{const r=document.createElement("div"),bs=[];r.className="vr";
-    [["u","👍","vu","Daumen hoch, plus 1000"],["n","😐","vn","Neutral, plus 50"],["d","👎","vd2","Daumen runter, minus 1000"]].forEach(([v,e,cl,lb])=>{
-     const b=document.createElement("button");b.className="vb "+cl;b.textContent=e;b.dataset.v=v;b.setAttribute("aria-label",lb);
+    [["u","👍","vu","Daumen hoch, plus 1000","+1000"],["n","😐","vn","Neutral, plus 50","+50"],["d","👎","vd2","Daumen runter, minus 1000","−1000"]].forEach(([v,e,cl,lb,pt])=>{
+     const b=document.createElement("button");b.type="button";b.className="vb "+cl;b.innerHTML=`<span class="ic">${e}</span>${pt}`;b.dataset.v=v;b.setAttribute("aria-label",lb);
      b.onclick=()=>{if(sel[id]==v)delete sel[id];else sel[id]=v;bs.forEach(x=>x.classList.toggle("on",sel[id]==x.dataset.v));r.classList.toggle("has",!!sel[id])};
      bs.push(b);r.append(b)});
-    const h=document.createElement("button");h.className="vb vh";h.textContent="🥰";h.setAttribute("aria-label","Herz, einmal pro Runde, plus 1000");
+    const h=document.createElement("button");h.type="button";h.className="vb vh";h.innerHTML='<span class="ic">🥰</span> +1000 (nur einmal pro Runde)';h.setAttribute("aria-label","Herz, einmal pro Runde, plus 1000");
     h.onclick=()=>{heart=heart==id?null:id;hbs.forEach(x=>{x.b.classList.toggle("on",heart==x.id);x.b.disabled=heart!=null&&heart!=x.id})};
     hbs.push({b:h,id});r.append(h);c.append(r)}
    $("#vg").append(c)});
