@@ -72,6 +72,7 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 .vb.on{border-color:var(--tx);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--tx);transform:scale(1.03)}
 .vb.on::after{content:"✓";font-size:1.1rem}
 .vb:disabled{opacity:.35;cursor:default}
+.rv{width:100%}.rv li{margin:.5rem 0}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
@@ -128,8 +129,8 @@ const FLAG={max:100,time:15,
   const bs=[...box.querySelectorAll(".opt")];
   const lock=()=>bs.forEach(x=>{x.disabled=true;if(x.dataset.c==q.c)x.classList.add("right")});
   bs.forEach(b=>b.onclick=()=>{const ok=b.dataset.c==q.c;lock();if(!ok)b.classList.add("wrong");
-   const p=ok?Math.round(50+50*box.left()):0;done(p,ok?`Richtig! ${p} Punkte.`:`Falsch. Das war ${N[q.c]}.`)});
-  box.onTimeout=()=>{lock();done(0,`Zeit abgelaufen. Das war ${N[q.c]}.`)}}};
+   const p=ok?Math.round(50+50*box.left()):0;done(p,ok?`Richtig! ${p} Punkte.`:`Falsch. Das war ${N[q.c]}.`,{t:flag(q.c),a:N[q.c],g:N[b.dataset.c],p})});
+  box.onTimeout=()=>{lock();done(0,`Zeit abgelaufen. Das war ${N[q.c]}.`,{t:flag(q.c),a:N[q.c],g:"keine Antwort",p:0})}}};
 const Q=[["Wie hoch ist der Mount Everest in Metern?",8849],["Wie viele Einwohner hat Deutschland in Millionen?",84],["Wie viele Knochen hat ein erwachsener Mensch?",206],["Wie weit ist der Mond von der Erde entfernt, in Kilometern?",384400],["Wie hoch ist der Eiffelturm in Metern?",330],["Wie viele Zähne hat ein erwachsener Mensch?",32],["Wie lang ist der Rhein in Kilometern?",1233],["Wie hoch ist das Burj Khalifa in Metern?",828],["Wie viele Länder sind Mitglied der UNO?",193],["Wie viele Tasten hat ein Klavier?",88],["Wie lang ist der Erdumfang am Äquator in Kilometern?",40075]];
 const EST={max:100,time:40,
  make:()=>shuffle(Q).slice(0,8),
@@ -139,10 +140,10 @@ const EST={max:100,time:40,
   const g=box.querySelector("#g"),ok=box.querySelector("#ok");
   const go=late=>{const n=parseFloat(g.value.replace(/\s/g,"").replace(/\.(?=\d{3}(\D|$))/g,"").replace(",","."));
    const a=q[1];
-   if(isNaN(n)){if(late===true){g.disabled=true;ok.remove();done(0,`Zeit abgelaufen. Richtig ist ${a.toLocaleString("de-DE")}.`)}return}
+   if(isNaN(n)){if(late===true){g.disabled=true;ok.remove();done(0,`Zeit abgelaufen. Richtig ist ${a.toLocaleString("de-DE")}.`,{t:q[0],a:a.toLocaleString("de-DE"),g:"keine Antwort",p:0})}return}
    const e=Math.abs(n-a)/a,acc=Math.max(0,100-100*e),p=Math.round(acc*(0.5+0.5*(late===true?0:box.left())));
    g.disabled=true;ok.remove();
-   done(p,`Richtig ist ${a.toLocaleString("de-DE")}. Du lagst ${Math.round(e*100)} Prozent daneben: ${p} Punkte.`)};
+   done(p,`Richtig ist ${a.toLocaleString("de-DE")}. Du lagst ${Math.round(e*100)} Prozent daneben: ${p} Punkte.`,{t:q[0],a:a.toLocaleString("de-DE"),g:n.toLocaleString("de-DE"),p})};
   ok.onclick=()=>go();g.onkeydown=e=>{if(e.key=="Enter")go()};box.onTimeout=()=>go(true);g.focus()}};
 const G=[
 {n:"Flaggenquiz",d:"Erkenne zehn Länder an ihrer Flagge, so schnell du kannst.",h:"Wähle in 15 Sekunden das passende Land: Je schneller du richtig antwortest, desto mehr Punkte gibt es (bis zu 100). Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen und vergleichen am Ende die Punkte. Siehst du nur Buchstaben statt Flaggen, zeigt dein Gerät keine Flaggen-Emojis an.",f:quiz(FLAG),g:"🚩",c:"var(--p1)"},
@@ -194,11 +195,12 @@ function pair(host){
  }}
 
 function quiz(cfg){return(st,m,say,code)=>{
- let qs,i=0,p=0,sc=[0,0],net,me=-1,mine=null,other=null,dead=false,tmr;
+ let qs,i=0,p=0,sc=[0,0],net,me=-1,mine=null,other=null,dead=false,tmr,recs=[];
  const box=document.createElement("div");box.className="qz";st.append(box);
  const result=()=>{if(mine==null)return;
   say(other==null?`Fertig mit ${mine} Punkten. Warte auf deinen Gegner …`:mine==other?`Unentschieden mit ${mine} Punkten!`:mine>other?`Du gewinnst mit ${mine} zu ${other} Punkten!`:`Dein Gegner gewinnt mit ${other} zu ${mine} Punkten.`)};
- const fin=()=>{box.innerHTML='<p class="q">Spiel beendet</p>';
+ const review=()=>recs.length?'<p class="q">Auflösung</p><ol class="rv">'+recs.map(r=>`<li><b>${esc(String(r.t))}</b><br>Richtig: ${esc(String(r.a))}. Deine Antwort: ${esc(String(r.g))} (${r.p} Punkte)</li>`).join("")+"</ol>":"";
+ const fin=()=>{box.innerHTML='<p class="q">Spiel beendet</p>'+review();
   if(m==1)say(`Fertig! Du hast ${sc[0]} von ${qs.length*cfg.max} Punkten.`);
   else if(m==2)say(sc[0]==sc[1]?`Unentschieden mit ${sc[0]} Punkten!`:`Spieler ${sc[0]>sc[1]?1:2} gewinnt mit ${Math.max(...sc)} zu ${Math.min(...sc)} Punkten.`);
   else if(m==3){mine=sc[0];net.emit("done",{s:mine});result()}else evDone()};
@@ -210,13 +212,13 @@ function quiz(cfg){return(st,m,say,code)=>{
   q.left=()=>Math.max(0,1-(Date.now()-t0)/(cfg.time*1000));
   const tick=tmr=setInterval(()=>{const f=q.left();bar.style.width=f*100+"%";bar.style.background=f<.33?"var(--ac)":"var(--p1)";lab.textContent=Math.ceil(f*cfg.time)+" s";
    if(f<=0&&!over){over=true;clearInterval(tick);q.onTimeout&&q.onTimeout()}},100);
-  cfg.show(qs[i],q,(pts,msg)=>{over=true;clearInterval(tick);sc[p]+=pts;say(msg);
+  cfg.show(qs[i],q,(pts,msg,rec)=>{if(rec)recs.push(rec);over=true;clearInterval(tick);sc[p]+=pts;say(msg);
    const b=document.createElement("button");b.className="btn";b.textContent=i+1<qs.length?"Weiter":"Ergebnis";
    b.onclick=()=>{i++;ask()};q.append(b);b.focus()})};
- const begin=k=>{qs=k;i=0;sc=[0,0];mine=other=null;ask()};
+ const begin=k=>{qs=k;i=0;sc=[0,0];mine=other=null;recs=[];ask()};
  const hb=m==4?code:null,res={};let fd=false;
  const board=()=>{const nm=hb.cfg.names,rows=Object.keys(res).map(k=>({n:nm[k],s:res[k]})).sort((a,b)=>b.s-a.s),all=rows.length>=nm.filter(Boolean).length;
-  box.innerHTML=`<p class="q">${all?"Endergebnis":"Warte auf die anderen …"}</p><ol style="width:100%">${rows.map(r=>`<li>${esc(r.n||"?")}: ${r.s} Punkte</li>`).join("")}</ol><button class="btn" id="eb">Zur Event-Lobby</button>`;
+  box.innerHTML=`<p class="q">${all?"Endergebnis":"Warte auf die anderen …"}</p><ol style="width:100%">${rows.map(r=>`<li>${esc(r.n||"?")}: ${r.s} Punkte</li>`).join("")}</ol>${review()}<button class="btn" id="eb">Zur Event-Lobby</button>`;
   box.querySelector("#eb").onclick=hb.cfg.back};
  const evDone=()=>{fd=true;res[hb.cfg.me]=sc[0];hb.emit("done",{s:sc[0]});board()};
  const ev4=()=>{
@@ -250,7 +252,16 @@ const MEMES=["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
 "data:image/jpeg;base64,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"];
 const K=["w","k","w","w","k","k","k","k","w"];
 const IM=MEMES.map(u=>{const i=new Image();i.src=u;return i});
-const getIm=i=>new Promise(r=>{const im=IM[i];im.complete&&im.naturalWidth?r(im):im.addEventListener("load",()=>r(im))});
+const durl=cv=>{try{return cv.toDataURL("image/jpeg",.92)}catch(_){return null}};
+const LUM=im=>{try{const c=document.createElement("canvas");c.width=c.height=16;const x=c.getContext("2d");x.drawImage(im,0,0,16,16);const d=x.getImageData(0,0,16,16).data;let t=0;for(let i=0;i<d.length;i+=4)t+=d[i]*.3+d[i+1]*.6+d[i+2]*.1;return t/256>150?"k":"w"}catch(_){return"w"}};
+const WAIT=MEMES.map(()=>Promise.resolve());
+"30b1gx 1ur9b0 3oevdk 46e43q 22bdq6 5c7lwq 26jxvz 28j0te 23ls 261o3j 2odckz 2fm6x 1c1uej 1ihzfe 3pdf2w 24y43o 54hjww 21uy0f 345v97 9ehk 1otk96 145qvv 26am 1bij 1o00in gtj5t 2xscjb 2za3u1 8d317n 1b42wl 1wz1x 43a45p 1jwhww wxica 2ybua0".split(" ").forEach(id=>{const i=IM.length,u="https://i.imgflip.com/4/"+id+".jpg",im=new Image();IM.push(im);K.push("w");
+ WAIT[i]=new Promise(res=>{
+  im.crossOrigin="anonymous";
+  im.onload=()=>{K[i]=LUM(im);res()};
+  im.onerror=()=>{const i2=new Image();IM[i]=i2;i2.onload=()=>{K[i]="w";res()};i2.onerror=()=>{IM[i]=IM[0];K[i]=K[0];res()};i2.src=u};
+  im.src=u})});
+const getIm=async i=>{await WAIT[i];const im=IM[i];if(!(im.complete&&im.naturalWidth))await new Promise(r=>im.addEventListener("load",r));return im};
 const fit=(cv,im,w)=>{cv.width=w;cv.height=Math.round(im.height*w/im.width);cv.style.setProperty("--w",w+"px")};
 const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
 const clean=sp=>{if(!sp||!Array.isArray(sp.T))return null;const n=v=>Math.max(0,Math.min(1,+v||0));
@@ -319,8 +330,8 @@ function meme(st,m,say,hub){
    fr.onload=()=>{const im=new Image();im.onload=()=>{E.im=im;fit(cv,im,Math.min(im.width,700));E.draw()};im.src=fr.result};fr.readAsDataURL(f)};
   let ended=false;
   const finish=late=>{if(ended)return;ended=true;tm.stop();E.lock();
-   const u=cv.toDataURL("image/jpeg",.92);shots.push(u);
-   $("#cc").innerHTML=`<p class="q">${late===true?"Zeit ist um!":"Runde fertig!"}</p><a class="btn" download="meme-${round}.jpg" href="${u}">Als Bild speichern</a><button class="btn" id="nx">${round<R?"Nächste Runde":"Alle Memes ansehen"}</button>`;
+   const u=durl(cv);if(u)shots.push(u);
+   $("#cc").innerHTML=`<p class="q">${late===true?"Zeit ist um!":"Runde fertig!"}</p>${u?`<a class="btn" download="meme-${round}.jpg" href="${u}">Als Bild speichern</a>`:"<p>Dieses Bild lässt sich nicht speichern.</p>"}<button class="btn" id="nx">${round<R?"Nächste Runde":"Alle Memes ansehen"}</button>`;
    $("#nx").onclick=()=>round<R?next():results();say(`Runde ${round} von ${R} beendet.`)};
   tm=timer($("#tb"),TL,finish);$("#dn").onclick=()=>finish(false);
   say(`Runde ${round} von ${R}. Ziehe die Texte an die richtige Stelle.`);
@@ -330,7 +341,7 @@ function meme(st,m,say,hub){
 }
 
 function multi(st,say,hub){
- const{me,names,R,TL}=hub.cfg,VT=25,host=me==0;
+ const{me,names,R,TL}=hub.cfg,VT=90,host=me==0;
  let round=0,total=names.map(()=>0),deck=[],tm,ti=0,subs={},votes={},phase="",last={},hist=[],tmpl={},fn=null;
  const pid=i=>names[i]||"?";
  const chk=()=>{if(phase=="edit"&&hub.ids().every(i=>subs[i]))openVote()};
@@ -374,10 +385,10 @@ function multi(st,say,hub){
   for(const h of hist){await Promise.all(Object.values(h.o).map(x=>getIm(x.t)));
    Object.keys(h.o).sort((a,b)=>(h.pts[b]||0)-(h.pts[a]||0)).forEach(k=>{
     const cv=document.createElement("canvas");const im2=IM[h.o[k].t];fit(cv,im2,600);paint(cv,im2,h.o[k]);
-    const u=cv.toDataURL("image/jpeg",.92),c=document.createElement("div"),i=document.createElement("img"),a=document.createElement("a"),p=document.createElement("p");
-    c.className="vc";i.src=u;i.alt="Meme von "+pid(+k);i.style.cssText="width:100%;border-radius:12px;border:2px solid var(--ln)";
+    const u=durl(cv),c=document.createElement("div"),i=document.createElement("img"),a=document.createElement("a"),p=document.createElement("p");
+    c.className="vc";if(u)i.src=u;i.alt="Meme von "+pid(+k);i.style.cssText="width:100%;border-radius:12px;border:2px solid var(--ln)";
     p.textContent=`Runde ${h.r}, ${pid(+k)}: ${h.pts[k]||0} Punkte`;a.className="btn";a.textContent="Speichern";a.href=u;a.download=`meme-runde${h.r}-${pid(+k)}.jpg`;
-    c.append(i,p,a);g.append(c)})}};
+    c.append(u?i:cv,p);if(u)c.append(a);g.append(c)})}};
  const showRes=async d=>{phase="res";fn=null;tm&&tm.stop();total=d.tot;hist.push({o:last,pts:d.pts,r:d.r});const fin=d.r>=R;
   const rank=names.map((n,i)=>({n,t:total[i]||0,p:d.pts[i]})).filter(o=>o.n).sort((a,b)=>b.t-a.t);
   const best=Object.keys(d.pts).sort((a,b)=>d.pts[b]-d.pts[a])[0];
