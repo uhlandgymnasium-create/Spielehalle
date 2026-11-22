@@ -64,6 +64,10 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 .evbox h2{margin:0 0 .3rem;font-size:1.4rem;font-weight:800}.evbox p{margin:0 0 .8rem;color:var(--mu)}
 .evg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem}
 .cl{height:220px;overflow:auto;border:2px solid var(--ln);border-radius:14px;padding:.5rem .7rem;background:var(--sf);margin:.4rem 0}.cl p{margin:.2rem 0}
+.vr{display:flex;gap:.4rem;justify-content:center}
+.vb{font-size:1.5rem;padding:.4rem .9rem;border-radius:12px;border:2px solid transparent;cursor:pointer;color:#fff}
+.vu{background:#2e9e4f}.vn{background:#8a86b0}.vd2{background:#d63a3a}.vh{background:#f0a6c0}
+.vr.has .vb:not(.vh):not(.on){opacity:.4}.vb.on{box-shadow:0 0 0 3px var(--tx)}.vb:disabled{opacity:.35;cursor:default}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
@@ -139,14 +143,15 @@ const EST={max:100,time:40,
 const G=[
 {n:"Flaggenquiz",d:"Erkenne zehn Länder an ihrer Flagge, so schnell du kannst.",h:"Wähle in 15 Sekunden das passende Land: Je schneller du richtig antwortest, desto mehr Punkte gibt es (bis zu 100). Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen und vergleichen am Ende die Punkte. Siehst du nur Buchstaben statt Flaggen, zeigt dein Gerät keine Flaggen-Emojis an.",f:quiz(FLAG),g:"🚩",c:"var(--p1)"},
 {n:"Schätzquiz",d:"Wie hoch, wie lang, wie viele? Je näher und schneller, desto mehr Punkte.",h:"Gib deine Schätzung als Zahl ein. Du hast 40 Sekunden pro Frage und bekommst bis zu 100 Punkte für Genauigkeit und Tempo. Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen.",f:quiz(EST),g:"🎯",c:"var(--p2)"},
-{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Mit mehreren Spielern gibt es den Memegenerator im Event: Alle bekommen dasselbe Meme und stimmen danach ab, bis zu 1000 Punkte pro Runde.",f:meme,g:"😂",c:"var(--ac)",mm:1}];
+{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Wähle oben „Mehrspieler“, um mit anderen zu spielen: Alle bekommen dasselbe Meme und bewerten danach die Memes der anderen (👍 +1000, 😐 +50, 👎 −1000, dazu einmal pro Runde 🥰 +1000). Am Ende könnt ihr alle Memes speichern.",f:meme,g:"😂",c:"var(--ac)",mm:1}];
 let cur,mode=1,stop,pend;
 $("#grid").innerHTML=G.map((g,i)=>`<button class="card" data-i="${i}" style="--c:${g.c}"><span class="gl">${g.g}</span><b>${g.n}</b><span>${g.d}</span></button>`).join("");
 $("#grid").onclick=e=>{const b=e.target.closest(".card");if(b)open(+b.dataset.i)};
 const seg=document.querySelectorAll(".seg button");
-function open(i){cur=G[i];if(cur.mm)mode=1;seg[1].hidden=seg[2].hidden=!!cur.mm;seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
+function open(i){cur=G[i];if(cur.mm)mode=1;seg[1].hidden=!!cur.mm;seg[2].textContent=cur.mm?"Mehrspieler":"Online";seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
  $("#t").textContent=cur.n;$("#hint").textContent=cur.h;$("#home").hidden=true;$("#play").hidden=false;scrollTo(0,0);run()}
-function run(code){stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";$("#net").hidden=mode!=3;
+function run(code){stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";$("#net").hidden=mode!=3||!!cur.mm;
+ if(mode==3&&cur.mm)return mmForm();
  if(mode==3&&!code){$("#st").textContent="Erstelle einen Raum oder tritt einem bei.";$("#pp").hidden=true;return}
  stop=cur.f($("#stage"),mode,s=>$("#st").textContent=s,code)}
 seg.forEach(b=>b.onclick=()=>{mode=+b.dataset.m;seg.forEach(x=>x.setAttribute("aria-pressed",x==b));run()});
@@ -322,13 +327,14 @@ function meme(st,m,say,hub){
 
 function multi(st,say,hub){
  const{me,names,R,TL}=hub.cfg,VT=25,host=me==0;
- let round=0,total=names.map(()=>0),deck=[],tm,ti=0,subs={},votes={},phase="",last={};
+ let round=0,total=names.map(()=>0),deck=[],tm,ti=0,subs={},votes={},phase="",last={},hist=[];
  const pid=i=>names[i]||"?";
  const chk=()=>{if(phase=="edit"&&hub.ids().every(i=>subs[i]))openVote()};
  const openVote=()=>{if(phase!="edit")return;const o={};for(const i in subs)o[i]=subs[i];hub.emit("vote",{subs:o});showVote(o);
   setTimeout(()=>{if(phase=="vote")score()},(VT+6)*1000)};
  const score=()=>{if(phase!="vote")return;phase="res";const P=hub.ids(),pts={};
-  for(const i in subs){let up=0;for(const v of P)if(v!=i&&votes[v]&&votes[v].includes(+i))up++;pts[i]=Math.round(1000*up/Math.max(1,P.length-1))}
+  const W={u:1000,n:50,d:-1000};
+  for(const i in subs){let p=0;for(const v of P){const x=votes[v];if(!x||v==i)continue;p+=W[x.v[i]]||0;if(x.h==i)p+=1000}pts[i]=p}
   for(const i in pts)total[i]+=pts[i];
   const d={r:round,pts,tot:total};hub.emit("res",d);showRes(d)};
  const nextRound=()=>{if(!deck.length)deck=shuffle(IM.map((_,i)=>i));const t=deck.pop();hub.emit("round",{r:round+1,t});startRound(round+1,t)};
@@ -341,24 +347,43 @@ function multi(st,say,hub){
   say(`Runde ${r} von ${R}. Alle haben dasselbe Meme.`);
   if(host)setTimeout(()=>{if(phase=="edit"&&round==r)openVote()},(TL+6)*1000)};
  const showVote=async o=>{last=o;phase="vote";const im=await getIm(ti);
-  st.innerHTML='<div class="mt"><div id="tb"></div><p class="q">Abstimmen: Welche Memes sind am lustigsten?</p><div class="vg" id="vg"></div><div class="bar"><button class="btn" id="vd">Fertig</button></div></div>';
-  const sel=new Set();let sent=false;
-  Object.keys(o).forEach(k=>{const id=+k,c=document.createElement("div"),cv=document.createElement("canvas"),b=document.createElement(id==me?"p":"button");
-   c.className="vc";fit(cv,im,600);paint(cv,im,o[k]);b.textContent=id==me?"Dein Meme":"👍 Gefällt mir";
-   if(id!=me){b.className="btn";b.onclick=()=>{sel.has(id)?sel.delete(id):sel.add(id);const on=sel.has(id);b.style.background=on?"var(--p1)":"";b.style.color=on?"var(--on)":""}}
-   c.append(cv,b);$("#vg").append(c)});
+  st.innerHTML='<div class="mt"><div id="tb"></div><p class="q">Bewerte die Memes</p><p style="text-align:center;color:var(--mu);margin:0">👍 +1000, 😐 +50, 👎 −1000. Dazu einmal pro Runde 🥰 für weitere +1000.</p><div class="vg" id="vg"></div><div class="bar"><button class="btn" id="vd">Fertig</button></div></div>';
+  const sel={};let heart=null,sent=false;const hbs=[];
+  Object.keys(o).forEach(k=>{const id=+k,c=document.createElement("div"),cv=document.createElement("canvas");c.className="vc";fit(cv,im,600);paint(cv,im,o[k]);c.append(cv);
+   if(id==me){const p=document.createElement("p");p.textContent="Dein Meme";c.append(p)}
+   else{const r=document.createElement("div"),bs=[];r.className="vr";
+    [["u","👍","vu","Daumen hoch, plus 1000"],["n","😐","vn","Neutral, plus 50"],["d","👎","vd2","Daumen runter, minus 1000"]].forEach(([v,e,cl,lb])=>{
+     const b=document.createElement("button");b.className="vb "+cl;b.textContent=e;b.dataset.v=v;b.setAttribute("aria-label",lb);
+     b.onclick=()=>{if(sel[id]==v)delete sel[id];else sel[id]=v;bs.forEach(x=>x.classList.toggle("on",sel[id]==x.dataset.v));r.classList.toggle("has",!!sel[id])};
+     bs.push(b);r.append(b)});
+    const h=document.createElement("button");h.className="vb vh";h.textContent="🥰";h.setAttribute("aria-label","Herz, einmal pro Runde, plus 1000");
+    h.onclick=()=>{heart=heart==id?null:id;hbs.forEach(x=>{x.b.classList.toggle("on",heart==x.id);x.b.disabled=heart!=null&&heart!=x.id})};
+    hbs.push({b:h,id});r.append(h);c.append(r)}
+   $("#vg").append(c)});
   const done=()=>{if(sent)return;sent=true;tm.stop();$("#vg").style.opacity=.5;$("#vd").disabled=true;
-   const ids=[...sel];if(host){votes[0]=ids;if(hub.ids().every(i=>votes[i]))score()}else hub.emit("votes",{ids})};
+   document.querySelectorAll("#vg button").forEach(b=>{b.disabled=true});
+   const x={v:{...sel},h:heart};if(host){votes[0]=x;if(hub.ids().every(i=>votes[i]))score()}else hub.emit("votes",x)};
   tm=timer($("#tb"),VT,done);$("#vd").onclick=done;say(`Runde ${round} von ${R}: Abstimmung`)};
- const showRes=async d=>{phase="res";tm&&tm.stop();total=d.tot;const fin=d.r>=R,im=await getIm(ti);
+ const fillGal=async()=>{const g=$("#gal");
+  for(const h of hist){const im2=await getIm(h.ti);
+   Object.keys(h.o).sort((a,b)=>(h.pts[b]||0)-(h.pts[a]||0)).forEach(k=>{
+    const cv=document.createElement("canvas");fit(cv,im2,600);paint(cv,im2,h.o[k]);
+    const u=cv.toDataURL("image/jpeg",.92),c=document.createElement("div"),i=document.createElement("img"),a=document.createElement("a"),p=document.createElement("p");
+    c.className="vc";i.src=u;i.alt="Meme von "+pid(+k);i.style.cssText="width:100%;border-radius:12px;border:2px solid var(--ln)";
+    p.textContent=`Runde ${h.r}, ${pid(+k)}: ${h.pts[k]||0} Punkte`;a.className="btn";a.textContent="Speichern";a.href=u;a.download=`meme-runde${h.r}-${pid(+k)}.jpg`;
+    c.append(i,p,a);g.append(c)})}};
+ const showRes=async d=>{phase="res";tm&&tm.stop();total=d.tot;hist.push({ti,o:last,pts:d.pts,r:d.r});const fin=d.r>=R,im=await getIm(ti);
   const rank=names.map((n,i)=>({n,t:total[i]||0,p:d.pts[i]})).filter(o=>o.n).sort((a,b)=>b.t-a.t);
   const best=Object.keys(d.pts).sort((a,b)=>d.pts[b]-d.pts[a])[0];
-  st.innerHTML=`<div class="qz"><p class="q">${fin?"Endergebnis":"Ergebnis Runde "+d.r}</p><canvas id="bc"></canvas><p>Bestes Meme: ${esc(pid(+best))}</p><ol style="width:100%">${rank.map(o=>`<li>${esc(o.n)}: ${o.t} Punkte${o.p!=null?" (+"+o.p+")":""}</li>`).join("")}</ol><div id="nx"></div></div>`;
+  st.innerHTML=`<div class="qz"${fin?' style="width:min(100%,900px)"':""}><p class="q">${fin?"Endergebnis":"Ergebnis Runde "+d.r}</p><canvas id="bc"></canvas><p>Bestes Meme: ${esc(pid(+best))}</p><ol style="width:100%">${rank.map(o=>`<li>${esc(o.n)}: ${o.t} Punkte${o.p!=null?" ("+(o.p>=0?"+":"")+o.p+")":""}</li>`).join("")}</ol><div id="nx"></div>${fin?'<p class="q">Alle Memes</p><div class="vg" id="gal"></div>':""}</div>`;
   if(best!=null&&last[best]){const cv=$("#bc");fit(cv,im,600);paint(cv,im,last[best])}
+  if(fin)fillGal();
   if(!fin){if(host){$("#nx").innerHTML='<button class="btn" id="nb">Nächste Runde</button>';$("#nb").onclick=nextRound}else $("#nx").textContent="Warte auf den Host …"}else if(hub.cfg.back){$("#nx").innerHTML='<button class="btn" id="nb">Zur Event-Lobby</button>';$("#nb").onclick=hub.cfg.back}
   say(fin?"Spiel beendet.":`Runde ${d.r} von ${R} ausgewertet.`)};
  hub.on("sub",(d,f)=>{if(host&&phase=="edit"){const s=clean(d&&d.s);if(s){subs[f]=s;chk()}}});
- hub.on("votes",(d,f)=>{if(host&&phase=="vote"&&d&&Array.isArray(d.ids)){votes[f]=d.ids.map(Number).filter(Number.isInteger).slice(0,12);if(hub.ids().every(i=>votes[i]))score()}});
+ hub.on("votes",(d,f)=>{if(host&&phase=="vote"&&d&&d.v&&typeof d.v=="object"){const v={};
+  for(const k in d.v)if(subs[k]&&k!=f&&typeof d.v[k]=="string"&&d.v[k].length==1&&"und".includes(d.v[k]))v[k]=d.v[k];
+  votes[f]={v,h:Number.isInteger(d.h)&&subs[d.h]&&d.h!=f?d.h:null};if(hub.ids().every(i=>votes[i]))score()}});
  hub.on("round",(d,f)=>{if(!host&&f===0&&d&&Number.isInteger(d.t)&&d.t>=0&&d.t<IM.length)startRound(+d.r||1,d.t)});
  hub.on("vote",(d,f)=>{if(host||f!==0||!d||!d.subs)return;const o={};for(const k in d.subs){const s=clean(d.subs[k]);if(s&&names[+k])o[k]=s}showVote(o)});
  hub.on("res",(d,f)=>{if(host||f!==0||!d||!Array.isArray(d.tot)||!d.pts)return;const pts={};for(const k in d.pts)pts[k]=+d.pts[k]||0;showRes({r:+d.r||1,pts,tot:d.tot.map(v=>+v||0)})});
@@ -368,11 +393,16 @@ function multi(st,say,hub){
  return()=>{tm&&tm.stop()};
 }
 
+const mmForm=()=>{
+ $("#stage").innerHTML=`<div class="qz"><p class="q">Mehrspieler</p><input class="in" id="mn" maxlength="12" placeholder="Dein Name" aria-label="Dein Name"><button class="btn" id="mc">Event erstellen</button><input class="in" id="mj" maxlength="12" placeholder="Event-Code" aria-label="Event-Code"><button class="btn" id="mb">Event beitreten</button></div>`;
+ $("#st").textContent="Erstelle ein Event oder tritt einem bei. Der Memegenerator ist schon ausgewählt.";
+ $("#mc").onclick=()=>{$("#en").value=$("#mn").value;evt(true,0,G.indexOf(cur))};
+ $("#mb").onclick=()=>{const v=$("#mj").value.trim().toLowerCase();if(!/^[a-z0-9]{3,12}$/.test(v))return $("#mj").focus();$("#en").value=$("#mn").value;evt(false,v,G.indexOf(cur))}};
 let EV=null;
-function evt(host,jc){
+function evt(host,jc,pre){
  EV&&EV.leave();
  const say=t=>{$("#evs").textContent=t},nm=($("#en").value.trim()||"Spieler").slice(0,12),hs=Object.create(null),conns=new Map(),chat=[];
- let names=[nm],peer,link,me=0,act=new Set([0]),playing=false,gstop=null,sel=0,onleft=()=>{},onclose=()=>{};
+ let names=[nm],peer,link,me=0,act=new Set([0]),playing=false,gstop=null,sel=pre||0,onleft=()=>{},onclose=()=>{};
  const send=(c,o)=>{try{c.send(JSON.stringify(o))}catch(_){}};
  const hub={on:(t,f)=>(hs[t]=hs[t]||[]).push(f),onleft:f=>{onleft=f},onclose:f=>{onclose=f},
   ids:()=>[0,...conns.keys()].filter(i=>act.has(i)),emit:(t,d)=>{host?conns.forEach(c=>send(c,{t,d,f:0})):send(link,{t,d})}};
@@ -392,7 +422,7 @@ function evt(host,jc){
   hub.cfg={names:names.slice(),R:cfg.R,TL:cfg.TL,me,back:showLobby};say(g.n);
   gstop=g.f($("#evgame"),g.mm?3:4,say,hub)};
  EV={code:jc,leave:()=>{gstop&&gstop();try{peer.destroy()}catch(_){}EV=null}};
- $("#home").hidden=true;$("#ev").hidden=false;$("#evl").hidden=true;$("#evgame").hidden=true;
+ $("#home").hidden=true;$("#play").hidden=true;$("#ev").hidden=false;$("#evl").hidden=true;$("#evgame").hidden=true;
  $("#evx").onclick=()=>{EV&&EV.leave();$("#ev").hidden=true;$("#home").hidden=false};
  $("#rn2").oninput=e=>{$("#rv2").textContent=e.target.value};$("#tl2").oninput=e=>{$("#tv2").textContent=fmt(+e.target.value)};
  $("#evgs").onclick=e=>{const b=e.target.closest("[data-i]");if(!b||!host||playing)return;sel=+b.dataset.i;conns.forEach(c=>send(c,{t:"sel",d:{g:sel},f:0}));showLobby()};
@@ -404,7 +434,7 @@ function evt(host,jc){
  if(!window.Peer)return say("Die Verbindungsbibliothek konnte nicht geladen werden. Prüfe deine Internetverbindung.");
  if(host){
   const code=Math.random().toString(36).slice(2,8);EV.code=code;peer=new Peer("spielhalle-"+code);
-  const roster=()=>{conns.forEach(c=>send(c,{t:"roster",d:{names},f:0}));if(!playing)showLobby()};
+  const roster=()=>{conns.forEach(c=>send(c,{t:"roster",d:{names,sel},f:0}));if(!playing)showLobby()};
   peer.on("open",()=>{$("#evt").textContent="Event "+code;showLobby()});
   peer.on("error",e=>e.type=="unavailable-id"?evt(true):say("Verbindung nicht möglich. Prüfe deine Internetverbindung."));
   peer.on("connection",c=>c.on("open",()=>{
@@ -424,7 +454,7 @@ function evt(host,jc){
    link.on("open",()=>{send(link,{t:"name",d:nm});$("#evt").textContent="Event "+jc;showLobby()});
    link.on("data",s=>{try{const m=JSON.parse(s),d=m.d;
     if(m.t=="welcome"){me=+d.id;if(Array.isArray(d.chat))d.chat.forEach(o=>chat.push({n:String(o.n||"").slice(0,12),m:String(o.m||"").slice(0,200)}));drawChat()}
-    else if(m.t=="roster"&&d&&Array.isArray(d.names)){names=d.names.map(String);if(!playing)showLobby()}
+    else if(m.t=="roster"&&d&&Array.isArray(d.names)){names=d.names.map(String);if(G[d.sel])sel=+d.sel;if(!playing)showLobby()}
     else if(m.t=="chat"&&d)addChat({n:String(d.n||"").slice(0,12),m:String(d.m||"").slice(0,200)});
     else if(m.t=="sel"&&d&&G[d.g]){sel=+d.g;if(!playing)showLobby()}
     else if(m.t=="start"&&d&&G[d.g]){if(Array.isArray(d.names))names=d.names.map(String);
