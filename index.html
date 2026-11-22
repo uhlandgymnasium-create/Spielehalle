@@ -49,11 +49,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-off
 .tp{display:flex;gap:.4rem;flex-wrap:wrap}
 canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border:2px solid var(--ln)}
 .tmw{display:flex;align-items:center;gap:.6rem;width:100%}
-.tm{flex:1;height:10px;border-radius:99px;background:var(--ln);overflow:hidden}
+.tm{flex:1;height:14px;border-radius:99px;background:var(--ln);overflow:hidden}
 .tm i{display:block;height:100%;width:100%;background:var(--p1)}
 .ts{min-width:4ch;text-align:right}
 .qz label{display:flex;flex-direction:column;gap:.3rem;width:100%}
 .qz input[type=range],.ctl input[type=range]{width:100%}
+.mt{width:100%}
+.tmw.st{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:.5rem 0}
+.st .tm{height:18px}.st .ts{font-size:1.4rem;font-weight:800;min-width:5ch}
+.vg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;width:100%}
+.vc{display:flex;flex-direction:column;gap:.4rem}.vc p{margin:0;text-align:center;color:var(--mu)}
+#pl,ol{padding-left:1.3rem;margin:.3rem 0}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
@@ -75,7 +81,7 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 </div>
 <button class="btn" id="re">Neu starten</button>
 </div>
-<div id="net" hidden><div class="bar"><button class="btn" id="mk">Raum erstellen</button><button class="btn" id="jn">Raum beitreten</button></div><div id="pp" hidden><div class="bar"><label for="code" id="s1"></label><input class="in" id="code" maxlength="12" autocomplete="off" spellcheck="false" style="width:10ch"><button class="btn" id="b1">Beitreten</button></div></div></div>
+<div id="net" hidden><div class="bar"><button class="btn" id="mk">Raum erstellen</button><button class="btn" id="jn">Raum beitreten</button><input class="in" id="pn" maxlength="12" placeholder="Dein Name" aria-label="Dein Name" style="width:12ch"></div><div id="pp" hidden><div class="bar"><label for="code" id="s1"></label><input class="in" id="code" maxlength="12" autocomplete="off" spellcheck="false" style="width:10ch"><button class="btn" id="b1">Beitreten</button></div></div></div>
 <p id="st" aria-live="polite"></p>
 <div class="stage" id="stage"></div>
 <p id="hint"></p>
@@ -115,12 +121,12 @@ const EST={max:100,time:40,
 const G=[
 {n:"Flaggenquiz",d:"Erkenne zehn Länder an ihrer Flagge, so schnell du kannst.",h:"Wähle in 15 Sekunden das passende Land: Je schneller du richtig antwortest, desto mehr Punkte gibt es (bis zu 100). Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen und vergleichen am Ende die Punkte. Siehst du nur Buchstaben statt Flaggen, zeigt dein Gerät keine Flaggen-Emojis an.",f:quiz(FLAG),g:"🚩",c:"var(--p1)"},
 {n:"Schätzquiz",d:"Wie hoch, wie lang, wie viele? Je näher und schneller, desto mehr Punkte.",h:"Gib deine Schätzung als Zahl ein. Du hast 40 Sekunden pro Frage und bekommst bis zu 100 Punkte für Genauigkeit und Tempo. Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen.",f:quiz(EST),g:"🎯",c:"var(--p2)"},
-{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde.",f:meme,g:"😂",c:"var(--ac)",nm:1}];
+{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Online: Ein Spieler erstellt einen Raum, bis zu elf weitere treten mit dem Code bei. Alle bekommen dasselbe Meme und stimmen danach ab: Je mehr Stimmen, desto mehr Punkte (bis 1000).",f:meme,g:"😂",c:"var(--ac)",mm:1}];
 let cur,mode=1,stop,pend;
 $("#grid").innerHTML=G.map((g,i)=>`<button class="card" data-i="${i}" style="--c:${g.c}"><span class="gl">${g.g}</span><b>${g.n}</b><span>${g.d}</span></button>`).join("");
 $("#grid").onclick=e=>{const b=e.target.closest(".card");if(b)open(+b.dataset.i)};
 const seg=document.querySelectorAll(".seg button");
-function open(i){cur=G[i];if(cur.nm)mode=1;$("#sg").hidden=!!cur.nm;seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
+function open(i){cur=G[i];if(cur.mm&&mode==2)mode=1;seg[1].hidden=!!cur.mm;seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
  $("#t").textContent=cur.n;$("#hint").textContent=cur.h;$("#home").hidden=true;$("#play").hidden=false;scrollTo(0,0);run()}
 function run(code){stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";$("#net").hidden=mode!=3;
  if(mode==3&&!code){$("#st").textContent="Erstelle einen Raum oder tritt einem bei.";$("#pp").hidden=true;return}
@@ -132,6 +138,7 @@ $("#re").onclick=()=>stop&&stop.again?stop.again():run();
 $("#mk").onclick=()=>pair(true);$("#jn").onclick=()=>pair(false);
 
 function pair(host){
+ if(cur.mm)return lobby(host);
  const say=s=>$("#st").textContent=s;
  stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";
  if(!window.Peer)return say("Die Verbindungsbibliothek konnte nicht geladen werden. Prüfe deine Internetverbindung.");
@@ -205,68 +212,178 @@ const MEMES=["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
 "data:image/jpeg;base64,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"];
 const K=["w","k","w","w","k","k","k","k","w"];
 const IM=MEMES.map(u=>{const i=new Image();i.src=u;return i});
-function meme(st,m,say){
- let R,TL,round,deck=[],shots=[],tick,swaps,curT;
- const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
- const setup=()=>{clearInterval(tick);
+const getIm=i=>new Promise(r=>{const im=IM[i];im.complete&&im.naturalWidth?r(im):im.addEventListener("load",()=>r(im))});
+const fit=(cv,im,w)=>{cv.width=w;cv.height=Math.round(im.height*w/im.width);cv.style.setProperty("--w",w+"px")};
+const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+const clean=sp=>{if(!sp||!Array.isArray(sp.T))return null;const n=v=>Math.max(0,Math.min(1,+v||0));
+ return{col:sp.col=="k"?"k":"w",sz:Math.max(20,Math.min(90,+sp.sz||44)),T:sp.T.slice(0,5).map(o=>({t:String(o&&o.t||"").slice(0,80),x:n(o&&o.x),y:n(o&&o.y)}))}};
+function paint(cv,im,sp){
+ const x=cv.getContext("2d"),W=cv.width,H=cv.height,sz=sp.sz*W/500,lh=sz*1.05;
+ if(im)x.drawImage(im,0,0,W,H);else{x.fillStyle="#ccc";x.fillRect(0,0,W,H)}
+ x.font=`800 ${sz}px Impact,"Bricolage Grotesque",sans-serif`;x.textAlign="center";x.textBaseline="middle";
+ x.lineJoin="round";x.lineWidth=sz/6;x.strokeStyle=sp.col=="w"?"#000":"#fff";x.fillStyle=sp.col=="w"?"#fff":"#000";
+ const lines=s=>{const o=[];let l="";for(const wd of s.toUpperCase().split(/\s+/).filter(Boolean)){const t=l?l+" "+wd:wd;if(l&&x.measureText(t).width>W*.9){o.push(l);l=wd}else l=t}if(l)o.push(l);return o};
+ return sp.T.map(o=>{const ls=lines(o.t);if(!ls.length)return null;
+  const bh=ls.length*lh,cx=o.x*W,cy=Math.max(bh/2,Math.min(H-bh/2,o.y*H));let bw=0;
+  ls.forEach((l,k)=>{const y=cy-bh/2+(k+.5)*lh;x.strokeText(l,cx,y);x.fillText(l,cx,y);bw=Math.max(bw,x.measureText(l).width)});
+  return{x0:cx-bw/2,x1:cx+bw/2,y0:cy-bh/2,y1:cy+bh/2}})}
+function timer(el,sec,end){
+ el.className="tmw st";el.innerHTML='<div class="tm"><i></i></div><b class="ts"></b>';
+ const bar=el.querySelector("i"),lab=el.querySelector("b"),t0=Date.now();let done=false;
+ const id=setInterval(()=>{const f=Math.max(0,1-(Date.now()-t0)/(sec*1000));bar.style.width=f*100+"%";bar.style.background=f<.2?"var(--ac)":"var(--p1)";lab.textContent=fmt(Math.ceil(f*sec));
+  if(f<=0&&!done){done=true;clearInterval(id);end(true)}},200);
+ return{stop:()=>{done=true;clearInterval(id)}}}
+function editor(st,o){
+ st.innerHTML=`<div class="mt"><div id="tb"></div><div class="mm"><canvas id="cv" width="600" height="450"></canvas><div class="ctl" id="cc"><div id="ex" class="ctl"></div><div id="tx" class="ctl"></div><button class="btn" id="ad">Textfeld hinzufügen</button><button class="btn" id="cl"></button><label>Schriftgröße <input type="range" id="sz" min="20" max="90" value="44"></label></div></div></div>`;
+ const cv=$("#cv");cv.style.touchAction="none";cv.style.cursor="move";
+ const S={im:o.im||null,col:o.col||"w",T:[{t:"Oberer Text",x:.5,y:.07},{t:"Unterer Text",x:.5,y:.93}],boxes:[],act:-1,off:[0,0]};
+ S.draw=()=>{S.boxes=paint(cv,S.im,{T:S.T,col:S.col,sz:+$("#sz").value})};
+ const clb=()=>{$("#cl").textContent="Textfarbe: "+(S.col=="w"?"Weiß":"Schwarz")};
+ const rt=()=>{$("#tx").innerHTML=S.T.map((o,i)=>`<div class="bar" style="margin:0"><input class="in" data-i="${i}" maxlength="80" aria-label="Text ${i+1}" placeholder="Text ${i+1}" value="${esc(o.t)}">${S.T.length>1?`<button class="btn" data-d="${i}" aria-label="Textfeld ${i+1} entfernen">✕</button>`:""}</div>`).join("");$("#ad").hidden=S.T.length>=5};
+ $("#tx").oninput=e=>{const i=e.target.dataset.i;if(i!=null){S.T[i].t=e.target.value;S.draw()}};
+ $("#tx").onclick=e=>{const b=e.target.closest("[data-d]");if(!b)return;S.T.splice(+b.dataset.d,1);rt();S.draw()};
+ $("#ad").onclick=()=>{if(S.T.length<5){S.T.push({t:"",x:.5,y:.5});rt();S.draw()}};
+ $("#cl").onclick=()=>{S.col=S.col=="w"?"k":"w";clb();S.draw()};
+ $("#sz").oninput=S.draw;
+ const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]};
+ cv.onpointerdown=e=>{const[px,py]=pt(e);let bd=1e12;S.act=-1;
+  S.boxes.forEach((b,i)=>{if(!b)return;const dx=Math.max(b.x0-px,0,px-b.x1),dy=Math.max(b.y0-py,0,py-b.y1),d=dx*dx+dy*dy;if(d<bd){bd=d;S.act=i}});
+  if(S.act<0)return;cv.setPointerCapture(e.pointerId);S.off=[px-S.T[S.act].x*cv.width,py-S.T[S.act].y*cv.height]};
+ cv.onpointermove=e=>{if(S.act<0)return;const[px,py]=pt(e);
+  S.T[S.act].x=Math.max(0,Math.min(1,(px-S.off[0])/cv.width));S.T[S.act].y=Math.max(0,Math.min(1,(py-S.off[1])/cv.height));S.draw()};
+ cv.onpointerup=cv.onpointercancel=()=>{S.act=-1};
+ S.set=(im,col)=>{S.im=im;fit(cv,im,600);S.col=col;clb();S.draw()};
+ S.spec=()=>({T:S.T.map(({t,x,y})=>({t,x,y})),col:S.col,sz:+$("#sz").value});
+ S.lock=()=>{S.act=-1;cv.onpointerdown=null;cv.style.cursor="default"};
+ rt();clb();if(S.im)S.set(S.im,S.col);else S.draw();
+ return S}
+
+function meme(st,m,say,hub){
+ if(m==3)return multi(st,say,hub);
+ let R,TL,round,deck=[],shots=[],tm,swaps,curT;
+ const setup=()=>{tm&&tm.stop();
   st.innerHTML=`<div class="qz"><p class="q">Einstellungen</p><label>Anzahl der Runden: <b id="rv">3</b><input type="range" id="rn" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv">1:00</b><input type="range" id="tl" min="15" max="300" step="15" value="60"></label><button class="btn" id="go">Starten</button></div>`;
   $("#rn").oninput=e=>{$("#rv").textContent=e.target.value};
   $("#tl").oninput=e=>{$("#tv").textContent=fmt(+e.target.value)};
   $("#go").onclick=()=>{R=+$("#rn").value;TL=+$("#tl").value;round=0;shots=[];deck=[];next()};
   say("Stelle Runden und Zeit ein, dann geht es los.")};
- const next=()=>{round++;swaps=5;if(!deck.length)deck=shuffle(IM.map((_,i)=>i));curT=deck.pop();editor()};
- const results=()=>{clearInterval(tick);
+ const next=()=>{round++;swaps=5;if(!deck.length)deck=shuffle(IM.map((_,i)=>i));curT=deck.pop();edit()};
+ const results=()=>{
   st.innerHTML=`<div class="qz"><p class="q">Deine Memes</p><div class="opts" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${shots.map((u,i)=>`<a href="${u}" download="meme-${i+1}.jpg"><img alt="Meme ${i+1}" src="${u}" style="width:100%;border-radius:12px;border:2px solid var(--ln)"></a>`).join("")}</div><p>Tippe auf ein Bild, um es zu speichern.</p><button class="btn" id="ag">Neue Runden</button></div>`;
   $("#ag").onclick=setup;say("Alle Runden geschafft!")};
- const editor=()=>{
-  st.innerHTML=`<div class="mm"><canvas id="cv" width="600" height="450"></canvas><div class="ctl" id="cc"><div class="tmw"><div class="tm"><i></i></div><b class="ts"></b></div><button class="btn" id="sw"></button><div id="tx" class="ctl"></div><button class="btn" id="ad">Textfeld hinzufügen</button><button class="btn" id="cl"></button><label>Schriftgröße <input type="range" id="sz" min="20" max="90" value="44"></label><label class="btn">Eigenes Bild<input type="file" accept="image/*" id="fi" hidden></label><button class="btn" id="dn">Runde beenden</button></div></div>`;
-  const cv=$("#cv"),x=cv.getContext("2d");cv.style.touchAction="none";cv.style.cursor="move";
-  let img=null,col="w",T=[{t:"Oberer Text",x:.5,y:.07},{t:"Unterer Text",x:.5,y:.93}],boxes=[],act=-1,off=[0,0],ended=false;
-  const lines=(s,w)=>{const o=[];let l="";
-   for(const wd of s.toUpperCase().split(/\s+/).filter(Boolean)){const t=l?l+" "+wd:wd;if(l&&x.measureText(t).width>w){o.push(l);l=wd}else l=t}
-   if(l)o.push(l);return o};
-  const draw=()=>{const W=cv.width,H=cv.height,sz=+$("#sz").value*W/500,lh=sz*1.05;
-   if(img)x.drawImage(img,0,0,W,H);else{x.fillStyle="#ccc";x.fillRect(0,0,W,H)}
-   x.font=`800 ${sz}px Impact,"Bricolage Grotesque",sans-serif`;x.textAlign="center";x.textBaseline="middle";
-   x.lineJoin="round";x.lineWidth=sz/6;x.strokeStyle=col=="w"?"#000":"#fff";x.fillStyle=col=="w"?"#fff":"#000";
-   boxes=T.map(o=>{const ls=lines(o.t,W*.9);if(!ls.length)return null;
-    const bh=ls.length*lh,cx=o.x*W,cy=Math.max(bh/2,Math.min(H-bh/2,o.y*H));let bw=0;
-    ls.forEach((l,k)=>{const y=cy-bh/2+(k+.5)*lh;x.strokeText(l,cx,y);x.fillText(l,cx,y);bw=Math.max(bw,x.measureText(l).width)});
-    return{x0:cx-bw/2,x1:cx+bw/2,y0:cy-bh/2,y1:cy+bh/2}})};
-  const size=(w,h)=>{cv.width=w;cv.height=h;cv.style.setProperty("--w",w+"px")};
-  const clb=()=>{$("#cl").textContent="Textfarbe: "+(col=="w"?"Weiß":"Schwarz")};
-  const rt=()=>{$("#tx").innerHTML=T.map((o,i)=>`<div class="bar" style="margin:0"><input class="in" data-i="${i}" maxlength="80" aria-label="Text ${i+1}" placeholder="Text ${i+1}" value="${esc(o.t)}">${T.length>1?`<button class="btn" data-d="${i}" aria-label="Textfeld ${i+1} entfernen">✕</button>`:""}</div>`).join("");$("#ad").hidden=T.length>=5};
-  $("#tx").oninput=e=>{const i=e.target.dataset.i;if(i!=null){T[i].t=e.target.value;draw()}};
-  $("#tx").onclick=e=>{const b=e.target.closest("[data-d]");if(!b)return;T.splice(+b.dataset.d,1);rt();draw()};
-  $("#ad").onclick=()=>{if(T.length<5){T.push({t:"",x:.5,y:.5});rt();draw()}};
-  $("#cl").onclick=()=>{col=col=="w"?"k":"w";clb();draw()};
-  $("#sz").oninput=draw;
-  const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height]};
-  cv.onpointerdown=e=>{const[px,py]=pt(e);let bd=1e12;act=-1;
-   boxes.forEach((b,i)=>{if(!b)return;const dx=Math.max(b.x0-px,0,px-b.x1),dy=Math.max(b.y0-py,0,py-b.y1),d=dx*dx+dy*dy;if(d<bd){bd=d;act=i}});
-   if(act<0)return;cv.setPointerCapture(e.pointerId);off=[px-T[act].x*cv.width,py-T[act].y*cv.height]};
-  cv.onpointermove=e=>{if(act<0)return;const[px,py]=pt(e);
-   T[act].x=Math.max(0,Math.min(1,(px-off[0])/cv.width));T[act].y=Math.max(0,Math.min(1,(py-off[1])/cv.height));draw()};
-  cv.onpointerup=cv.onpointercancel=()=>{act=-1};
+ const edit=async()=>{
+  const E=editor(st,{}),cv=$("#cv");
+  $("#ex").innerHTML=`<button class="btn" id="sw"></button><label class="btn">Eigenes Bild<input type="file" accept="image/*" id="fi" hidden></label><button class="btn" id="dn">Runde beenden</button>`;
   const upd=()=>{const b=$("#sw");b.textContent=swaps?`Anderes Meme (${swaps} übrig)`:"Keine Wechsel mehr übrig";b.disabled=!swaps};
-  const show=i=>{const im=IM[i],go=()=>{img=im;size(600,Math.round(im.height*600/im.width));col=K[i];clb();draw()};im.complete&&im.naturalWidth?go():im.onload=go};
+  const show=async i=>{E.set(await getIm(i),K[i])};
   $("#sw").onclick=()=>{if(swaps<1)return;swaps--;let i;do i=Math.random()*IM.length|0;while(i==curT&&IM.length>1);curT=i;show(i);upd()};
   $("#fi").onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();
-   fr.onload=()=>{const im=new Image();im.onload=()=>{img=im;const s=Math.min(1,700/im.width);size(im.width*s|0,im.height*s|0);draw()};im.src=fr.result};
-   fr.readAsDataURL(f)};
-  const finish=late=>{if(ended)return;ended=true;clearInterval(tick);act=-1;cv.onpointerdown=null;cv.style.cursor="default";
+   fr.onload=()=>{const im=new Image();im.onload=()=>{E.im=im;fit(cv,im,Math.min(im.width,700));E.draw()};im.src=fr.result};fr.readAsDataURL(f)};
+  let ended=false;
+  const finish=late=>{if(ended)return;ended=true;tm.stop();E.lock();
    const u=cv.toDataURL("image/jpeg",.92);shots.push(u);
-   $("#cc").innerHTML=`<p class="q">${late?"Zeit ist um!":"Runde fertig!"}</p><a class="btn" download="meme-${round}.jpg" href="${u}">Als Bild speichern</a><button class="btn" id="nx">${round<R?"Nächste Runde":"Alle Memes ansehen"}</button>`;
+   $("#cc").innerHTML=`<p class="q">${late===true?"Zeit ist um!":"Runde fertig!"}</p><a class="btn" download="meme-${round}.jpg" href="${u}">Als Bild speichern</a><button class="btn" id="nx">${round<R?"Nächste Runde":"Alle Memes ansehen"}</button>`;
    $("#nx").onclick=()=>round<R?next():results();say(`Runde ${round} von ${R} beendet.`)};
-  $("#dn").onclick=()=>finish(false);
-  const w=st.querySelector(".tmw"),bar=w.querySelector("i"),lab=w.querySelector("b"),t0=Date.now();
-  clearInterval(tick);
-  tick=setInterval(()=>{const f=Math.max(0,1-(Date.now()-t0)/(TL*1000));bar.style.width=f*100+"%";bar.style.background=f<.2?"var(--ac)":"var(--p1)";lab.textContent=fmt(Math.ceil(f*TL));if(f<=0)finish(true)},200);
+  tm=timer($("#tb"),TL,finish);$("#dn").onclick=()=>finish(false);
   say(`Runde ${round} von ${R}. Ziehe die Texte an die richtige Stelle.`);
-  rt();clb();upd();show(curT);draw()};
+  upd();show(curT)};
  setup();
- return()=>clearInterval(tick);
+ return()=>tm&&tm.stop();
 }
+
+function multi(st,say,hub){
+ const{me,names,R,TL}=hub.cfg,VT=25,host=me==0;
+ let round=0,total=names.map(()=>0),deck=[],tm,ti=0,subs={},votes={},phase="",last={};
+ const pid=i=>names[i]||"?";
+ const chk=()=>{if(phase=="edit"&&hub.ids().every(i=>subs[i]))openVote()};
+ const openVote=()=>{if(phase!="edit")return;const o={};for(const i in subs)o[i]=subs[i];hub.emit("vote",{subs:o});showVote(o);
+  setTimeout(()=>{if(phase=="vote")score()},(VT+6)*1000)};
+ const score=()=>{if(phase!="vote")return;phase="res";const P=hub.ids(),pts={};
+  for(const i in subs){let up=0;for(const v of P)if(v!=i&&votes[v]&&votes[v].includes(+i))up++;pts[i]=Math.round(1000*up/Math.max(1,P.length-1))}
+  for(const i in pts)total[i]+=pts[i];
+  const d={r:round,pts,tot:total};hub.emit("res",d);showRes(d)};
+ const nextRound=()=>{if(!deck.length)deck=shuffle(IM.map((_,i)=>i));const t=deck.pop();hub.emit("round",{r:round+1,t});startRound(round+1,t)};
+ const startRound=async(r,t)=>{round=r;ti=t;subs={};votes={};phase="edit";
+  const im=await getIm(t),E=editor(st,{im,col:K[t]});let sent=false;
+  $("#ex").innerHTML='<button class="btn" id="dn">Fertig</button>';
+  const send=()=>{if(sent)return;sent=true;tm.stop();E.lock();$("#cc").innerHTML='<p class="q">Eingereicht. Warte auf die anderen …</p>';
+   const sp=E.spec();if(host){subs[0]=clean(sp);chk()}else hub.emit("sub",{s:sp})};
+  tm=timer($("#tb"),TL,send);$("#dn").onclick=send;
+  say(`Runde ${r} von ${R}. Alle haben dasselbe Meme.`);
+  if(host)setTimeout(()=>{if(phase=="edit"&&round==r)openVote()},(TL+6)*1000)};
+ const showVote=async o=>{last=o;phase="vote";const im=await getIm(ti);
+  st.innerHTML='<div class="mt"><div id="tb"></div><p class="q">Abstimmen: Welche Memes sind am lustigsten?</p><div class="vg" id="vg"></div><div class="bar"><button class="btn" id="vd">Fertig</button></div></div>';
+  const sel=new Set();let sent=false;
+  Object.keys(o).forEach(k=>{const id=+k,c=document.createElement("div"),cv=document.createElement("canvas"),b=document.createElement(id==me?"p":"button");
+   c.className="vc";fit(cv,im,600);paint(cv,im,o[k]);b.textContent=id==me?"Dein Meme":"👍 Gefällt mir";
+   if(id!=me){b.className="btn";b.onclick=()=>{sel.has(id)?sel.delete(id):sel.add(id);const on=sel.has(id);b.style.background=on?"var(--p1)":"";b.style.color=on?"var(--on)":""}}
+   c.append(cv,b);$("#vg").append(c)});
+  const done=()=>{if(sent)return;sent=true;tm.stop();$("#vg").style.opacity=.5;$("#vd").disabled=true;
+   const ids=[...sel];if(host){votes[0]=ids;if(hub.ids().every(i=>votes[i]))score()}else hub.emit("votes",{ids})};
+  tm=timer($("#tb"),VT,done);$("#vd").onclick=done;say(`Runde ${round} von ${R}: Abstimmung`)};
+ const showRes=async d=>{phase="res";tm&&tm.stop();total=d.tot;const fin=d.r>=R,im=await getIm(ti);
+  const rank=names.map((n,i)=>({n,t:total[i]||0,p:d.pts[i]})).filter(o=>o.n).sort((a,b)=>b.t-a.t);
+  const best=Object.keys(d.pts).sort((a,b)=>d.pts[b]-d.pts[a])[0];
+  st.innerHTML=`<div class="qz"><p class="q">${fin?"Endergebnis":"Ergebnis Runde "+d.r}</p><canvas id="bc"></canvas><p>Bestes Meme: ${esc(pid(+best))}</p><ol style="width:100%">${rank.map(o=>`<li>${esc(o.n)}: ${o.t} Punkte${o.p!=null?" (+"+o.p+")":""}</li>`).join("")}</ol><div id="nx"></div></div>`;
+  if(best!=null&&last[best]){const cv=$("#bc");fit(cv,im,600);paint(cv,im,last[best])}
+  if(!fin){if(host){$("#nx").innerHTML='<button class="btn" id="nb">Nächste Runde</button>';$("#nb").onclick=nextRound}else $("#nx").textContent="Warte auf den Host …"}
+  say(fin?"Spiel beendet.":`Runde ${d.r} von ${R} ausgewertet.`)};
+ hub.on("sub",(d,f)=>{if(host&&phase=="edit"){const s=clean(d&&d.s);if(s){subs[f]=s;chk()}}});
+ hub.on("votes",(d,f)=>{if(host&&phase=="vote"&&d&&Array.isArray(d.ids)){votes[f]=d.ids.map(Number).filter(Number.isInteger).slice(0,12);if(hub.ids().every(i=>votes[i]))score()}});
+ hub.on("round",(d,f)=>{if(!host&&f===0&&d&&Number.isInteger(d.t)&&d.t>=0&&d.t<IM.length)startRound(+d.r||1,d.t)});
+ hub.on("vote",(d,f)=>{if(host||f!==0||!d||!d.subs)return;const o={};for(const k in d.subs){const s=clean(d.subs[k]);if(s&&names[+k])o[k]=s}showVote(o)});
+ hub.on("res",(d,f)=>{if(host||f!==0||!d||!Array.isArray(d.tot)||!d.pts)return;const pts={};for(const k in d.pts)pts[k]=+d.pts[k]||0;showRes({r:+d.r||1,pts,tot:d.tot.map(v=>+v||0)})});
+ hub.onleft(()=>{if(phase=="edit")chk();else if(phase=="vote"&&hub.ids().every(i=>votes[i]))score()});
+ hub.onclose(()=>say("Der Host hat das Spiel verlassen."));
+ if(host)nextRound();else say("Warte auf Runde 1 …");
+ return()=>{tm&&tm.stop();hub.stop()};
+}
+
+function lobby(host){
+ const say=s=>$("#st").textContent=s,stg=$("#stage");
+ stop&&stop();stop=0;pend&&pend.stop();pend=0;stg.innerHTML="";
+ if(!window.Peer)return say("Die Verbindungsbibliothek konnte nicht geladen werden. Prüfe deine Internetverbindung.");
+ const nm=($("#pn").value.trim()||"Spieler").slice(0,12),hs=Object.create(null),conns=new Map();
+ let names=[nm],peer,link,started=false,onleft=()=>{},onclose=()=>{},me=0;
+ const send=(c,o)=>{try{c.send(JSON.stringify(o))}catch(_){}};
+ const hub={on:(t,f)=>(hs[t]=hs[t]||[]).push(f),onleft:f=>{onleft=f},onclose:f=>{onclose=f},ids:()=>[0,...conns.keys()],
+  emit:(t,d)=>{host?conns.forEach(c=>send(c,{t,d,f:0})):send(link,{t,d})},stop:()=>{try{peer.destroy()}catch(_){}}};
+ const disp=(t,d,f)=>(hs[t]||[]).forEach(h=>h(d,f));
+ const go=cfg=>{started=true;$("#net").hidden=true;pend=0;hub.cfg={...cfg,me};stop=cur.f(stg,3,say,hub)};
+ const list=a=>`<ul id="pl">${a.filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`;
+ if(host){
+  const code=Math.random().toString(36).slice(2,8);peer=new Peer("spielhalle-"+code);pend={stop:hub.stop};
+  stg.innerHTML=`<div class="qz"><p class="q">Raum-Code: ${code}</p><div id="pw"></div><label>Anzahl der Runden: <b id="rv">3</b><input type="range" id="rn" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv">1:00</b><input type="range" id="tl" min="15" max="300" step="15" value="60"></label><button class="btn" id="sg1" disabled>Spiel starten</button></div>`;
+  $("#rn").oninput=e=>{$("#rv").textContent=e.target.value};$("#tl").oninput=e=>{$("#tv").textContent=fmt(+e.target.value)};
+  const roster=()=>{$("#pw").innerHTML="<p>Spieler:</p>"+list(names);$("#sg1").disabled=conns.size<1;conns.forEach(c=>send(c,{t:"roster",d:{names},f:0}))};
+  $("#sg1").onclick=()=>{if(started)return;const cfg={names:names.slice(),R:+$("#rn").value,TL:+$("#tl").value};conns.forEach(c=>send(c,{t:"start",d:cfg,f:0}));go(cfg)};
+  peer.on("open",()=>{say(`Nenne deinen Mitspielern den Raum-Code ${code}. Du startest, sobald alle da sind.`);roster()});
+  peer.on("error",e=>e.type=="unavailable-id"?lobby(true):say("Verbindung nicht möglich. Prüfe deine Internetverbindung."));
+  peer.on("connection",c=>c.on("open",()=>{
+   if(started||conns.size>=11){send(c,{t:"full"});setTimeout(()=>c.close(),400);return}
+   const id=names.length;names.push("Spieler "+id);conns.set(id,c);send(c,{t:"welcome",d:{id}});
+   c.on("data",s=>{try{const m=JSON.parse(s);
+    if(m.t=="name"){names[id]=String(m.d||"").slice(0,12)||names[id];if(!started)roster()}
+    else{disp(m.t,m.d,id);conns.forEach((o,k)=>{if(k!=id)send(o,{t:m.t,d:m.d,f:id})})}}catch(_){}});
+   c.on("close",()=>{conns.delete(id);if(!started){names[id]="";roster()}else onleft(id)});
+   roster()}));
+ }else{
+  const ci=$("#code"),b1=$("#b1");$("#pp").hidden=false;$("#s1").textContent="Raum-Code:";ci.value="";ci.readOnly=false;b1.hidden=false;b1.textContent="Beitreten";
+  b1.onclick=()=>{const v=ci.value.trim().toLowerCase();
+   if(!/^[a-z0-9]{3,12}$/.test(v))return say("Der Code besteht aus Buchstaben und Ziffern.");
+   pend&&pend.stop();peer=new Peer();pend={stop:hub.stop};say("Verbinde …");
+   peer.on("error",e=>say(e.type=="peer-unavailable"?"Diesen Raum gibt es nicht. Prüfe den Code.":"Verbindung nicht möglich."));
+   peer.on("open",()=>{link=peer.connect("spielhalle-"+v);
+    link.on("open",()=>{$("#pp").hidden=true;send(link,{t:"name",d:nm});say("Verbunden. Warte, bis der Host das Spiel startet.")});
+    link.on("data",s=>{try{const m=JSON.parse(s);
+     if(m.t=="welcome")me=+m.d.id;
+     else if(m.t=="roster"&&Array.isArray(m.d.names))stg.innerHTML=`<div class="qz"><p class="q">Warteraum</p>${list(m.d.names.map(String))}</div>`;
+     else if(m.t=="start"&&!started){const c=m.d;go({names:c.names.map(String),R:Math.max(1,Math.min(10,+c.R||3)),TL:Math.max(15,Math.min(300,+c.TL||60))})}
+     else if(m.t=="full")say("Der Raum ist voll oder das Spiel läuft schon.");
+     else disp(m.t,m.d,m.f)}catch(_){}});
+    link.on("close",()=>onclose());
+    setTimeout(()=>{if(!link.open)say("Keine Antwort vom Raum. Prüfe den Code oder versuche es erneut.")},12000)})};
+ }}
 </script>
 </body>
 </html>
