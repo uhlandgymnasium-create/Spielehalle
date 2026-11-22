@@ -60,6 +60,10 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 .vg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;width:100%}
 .vc{display:flex;flex-direction:column;gap:.4rem}.vc p{margin:0;text-align:center;color:var(--mu)}
 #pl,ol{padding-left:1.3rem;margin:.3rem 0}
+.evbox{margin-top:2rem;padding:1rem 1.1rem;border:2px solid var(--ln);border-radius:22px;background:var(--sf)}
+.evbox h2{margin:0 0 .3rem;font-size:1.4rem;font-weight:800}.evbox p{margin:0 0 .8rem;color:var(--mu)}
+.evg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem}
+.cl{height:220px;overflow:auto;border:2px solid var(--ln);border-radius:14px;padding:.5rem .7rem;background:var(--sf);margin:.4rem 0}.cl p{margin:.2rem 0}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
@@ -67,8 +71,11 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 <main>
 <section id="home">
 <h1>Spielhalle</h1>
-<p class="lead">Zwei Quizspiele und ein Memegenerator. Die Quiz laufen allein, zu zweit am selben Gerät oder online.</p>
+<p class="lead">Zwei Quizspiele und ein Memegenerator. Spiele allein, zu zweit oder im gemeinsamen Event mit Chat.</p>
 <div class="grid" id="grid"></div>
+<div class="evbox"><h2>Gemeinsames Event</h2><p>Erstelle ein Event, lass alle beitreten und wählt zusammen Spiele aus. Zwischen den Spielen landet ihr in der Event-Lobby mit Chat.</p>
+<div class="bar"><input class="in" id="en" maxlength="12" placeholder="Dein Name" aria-label="Dein Name" style="flex:1"><button class="btn" id="ecr">Event erstellen</button></div>
+<div class="bar"><input class="in" id="eco" maxlength="12" placeholder="Event-Code" aria-label="Event-Code" style="flex:1"><button class="btn" id="ejo">Beitreten</button></div></div>
 </section>
 <section id="play" hidden>
 <div class="bar">
@@ -81,10 +88,21 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 </div>
 <button class="btn" id="re">Neu starten</button>
 </div>
-<div id="net" hidden><div class="bar"><button class="btn" id="mk">Raum erstellen</button><button class="btn" id="jn">Raum beitreten</button><input class="in" id="pn" maxlength="12" placeholder="Dein Name" aria-label="Dein Name" style="width:12ch"></div><div id="pp" hidden><div class="bar"><label for="code" id="s1"></label><input class="in" id="code" maxlength="12" autocomplete="off" spellcheck="false" style="width:10ch"><button class="btn" id="b1">Beitreten</button></div></div></div>
+<div id="net" hidden><div class="bar"><button class="btn" id="mk">Raum erstellen</button><button class="btn" id="jn">Raum beitreten</button></div><div id="pp" hidden><div class="bar"><label for="code" id="s1"></label><input class="in" id="code" maxlength="12" autocomplete="off" spellcheck="false" style="width:10ch"><button class="btn" id="b1">Beitreten</button></div></div></div>
 <p id="st" aria-live="polite"></p>
 <div class="stage" id="stage"></div>
 <p id="hint"></p>
+</section>
+<section id="ev" hidden>
+<div class="bar"><button class="btn" id="evx">Event verlassen</button><h2 id="evt">Event</h2></div>
+<p id="evs" aria-live="polite"></p>
+<div id="evl" hidden><div class="evg"><div><b>Spieler</b><ul id="evp"></ul>
+<div id="evh" hidden><p><b>Spiel wählen</b></p><div class="opts" id="evgs"></div>
+<div id="evset" class="qz" hidden><label>Anzahl der Runden: <b id="rv2">3</b><input type="range" id="rn2" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv2">1:00</b><input type="range" id="tl2" min="15" max="300" step="15" value="60"></label></div>
+<div class="bar"><button class="btn" id="evgo">Spiel starten</button></div></div>
+<p id="evw" hidden></p></div>
+<div><b>Chat</b><div class="cl" id="ec"></div><div class="bar"><input class="in" id="ei" maxlength="200" placeholder="Nachricht" aria-label="Nachricht" style="flex:1"><button class="btn" id="es">Senden</button></div></div></div></div>
+<div class="stage" id="evgame" hidden></div>
 </section>
 </main>
 <script>
@@ -121,12 +139,12 @@ const EST={max:100,time:40,
 const G=[
 {n:"Flaggenquiz",d:"Erkenne zehn Länder an ihrer Flagge, so schnell du kannst.",h:"Wähle in 15 Sekunden das passende Land: Je schneller du richtig antwortest, desto mehr Punkte gibt es (bis zu 100). Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen und vergleichen am Ende die Punkte. Siehst du nur Buchstaben statt Flaggen, zeigt dein Gerät keine Flaggen-Emojis an.",f:quiz(FLAG),g:"🚩",c:"var(--p1)"},
 {n:"Schätzquiz",d:"Wie hoch, wie lang, wie viele? Je näher und schneller, desto mehr Punkte.",h:"Gib deine Schätzung als Zahl ein. Du hast 40 Sekunden pro Frage und bekommst bis zu 100 Punkte für Genauigkeit und Tempo. Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen.",f:quiz(EST),g:"🎯",c:"var(--p2)"},
-{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Online: Ein Spieler erstellt einen Raum, bis zu elf weitere treten mit dem Code bei. Alle bekommen dasselbe Meme und stimmen danach ab: Je mehr Stimmen, desto mehr Punkte (bis 1000).",f:meme,g:"😂",c:"var(--ac)",mm:1}];
+{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Mit mehreren Spielern gibt es den Memegenerator im Event: Alle bekommen dasselbe Meme und stimmen danach ab, bis zu 1000 Punkte pro Runde.",f:meme,g:"😂",c:"var(--ac)",mm:1}];
 let cur,mode=1,stop,pend;
 $("#grid").innerHTML=G.map((g,i)=>`<button class="card" data-i="${i}" style="--c:${g.c}"><span class="gl">${g.g}</span><b>${g.n}</b><span>${g.d}</span></button>`).join("");
 $("#grid").onclick=e=>{const b=e.target.closest(".card");if(b)open(+b.dataset.i)};
 const seg=document.querySelectorAll(".seg button");
-function open(i){cur=G[i];if(cur.mm&&mode==2)mode=1;seg[1].hidden=!!cur.mm;seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
+function open(i){cur=G[i];if(cur.mm)mode=1;seg[1].hidden=seg[2].hidden=!!cur.mm;seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
  $("#t").textContent=cur.n;$("#hint").textContent=cur.h;$("#home").hidden=true;$("#play").hidden=false;scrollTo(0,0);run()}
 function run(code){stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";$("#net").hidden=mode!=3;
  if(mode==3&&!code){$("#st").textContent="Erstelle einen Raum oder tritt einem bei.";$("#pp").hidden=true;return}
@@ -138,7 +156,6 @@ $("#re").onclick=()=>stop&&stop.again?stop.again():run();
 $("#mk").onclick=()=>pair(true);$("#jn").onclick=()=>pair(false);
 
 function pair(host){
- if(cur.mm)return lobby(host);
  const say=s=>$("#st").textContent=s;
  stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";
  if(!window.Peer)return say("Die Verbindungsbibliothek konnte nicht geladen werden. Prüfe deine Internetverbindung.");
@@ -175,7 +192,7 @@ function quiz(cfg){return(st,m,say,code)=>{
  const fin=()=>{box.innerHTML='<p class="q">Spiel beendet</p>';
   if(m==1)say(`Fertig! Du hast ${sc[0]} von ${qs.length*cfg.max} Punkten.`);
   else if(m==2)say(sc[0]==sc[1]?`Unentschieden mit ${sc[0]} Punkten!`:`Spieler ${sc[0]>sc[1]?1:2} gewinnt mit ${Math.max(...sc)} zu ${Math.min(...sc)} Punkten.`);
-  else{mine=sc[0];net.emit("done",{s:mine});result()}};
+  else if(m==3){mine=sc[0];net.emit("done",{s:mine});result()}else evDone()};
  const ask=()=>{clearInterval(tmr);if(i>=qs.length)return fin();p=m==2?i%2:0;
   say(m==2?`Frage ${i+1} von ${qs.length}, Spieler ${p+1} ist dran (Stand ${sc[0]} zu ${sc[1]})`:`Frage ${i+1} von ${qs.length}, Punkte: ${sc[0]}`);
   const w=document.createElement("div"),q=document.createElement("div");w.className="tmw";q.className="qz";
@@ -188,6 +205,18 @@ function quiz(cfg){return(st,m,say,code)=>{
    const b=document.createElement("button");b.className="btn";b.textContent=i+1<qs.length?"Weiter":"Ergebnis";
    b.onclick=()=>{i++;ask()};q.append(b);b.focus()})};
  const begin=k=>{qs=k;i=0;sc=[0,0];mine=other=null;ask()};
+ const hb=m==4?code:null,res={};let fd=false;
+ const board=()=>{const nm=hb.cfg.names,rows=Object.keys(res).map(k=>({n:nm[k],s:res[k]})).sort((a,b)=>b.s-a.s),all=rows.length>=nm.filter(Boolean).length;
+  box.innerHTML=`<p class="q">${all?"Endergebnis":"Warte auf die anderen …"}</p><ol style="width:100%">${rows.map(r=>`<li>${esc(r.n||"?")}: ${r.s} Punkte</li>`).join("")}</ol><button class="btn" id="eb">Zur Event-Lobby</button>`;
+  box.querySelector("#eb").onclick=hb.cfg.back};
+ const evDone=()=>{fd=true;res[hb.cfg.me]=sc[0];hb.emit("done",{s:sc[0]});board()};
+ const ev4=()=>{
+  hb.on("done",(d,f)=>{if(d&&typeof d.s=="number"){res[f]=Math.max(0,Math.min(1e5,d.s));if(fd)board()}});
+  hb.on("qs",(x,f)=>{const k=x&&x.q;if(f===0&&hb.cfg.me!=0&&Array.isArray(k)&&k.length&&k.length<=12&&k.every(q=>cfg.ok(q)))begin(k)});
+  hb.onclose(()=>say("Der Host hat die Verbindung beendet."));
+  if(hb.cfg.me==0){const k=cfg.make();hb.emit("qs",{q:k});begin(k)}else say("Warte auf die ersten Fragen …");
+  return()=>clearInterval(tmr)};
+ if(m==4)return ev4();
  if(m!=3){begin(cfg.make());return()=>clearInterval(tmr)}
  net=code;me=net.role;
  const host=()=>{const k=cfg.make();net.emit("qs",{q:k});begin(k)};
@@ -326,7 +355,7 @@ function multi(st,say,hub){
   const best=Object.keys(d.pts).sort((a,b)=>d.pts[b]-d.pts[a])[0];
   st.innerHTML=`<div class="qz"><p class="q">${fin?"Endergebnis":"Ergebnis Runde "+d.r}</p><canvas id="bc"></canvas><p>Bestes Meme: ${esc(pid(+best))}</p><ol style="width:100%">${rank.map(o=>`<li>${esc(o.n)}: ${o.t} Punkte${o.p!=null?" (+"+o.p+")":""}</li>`).join("")}</ol><div id="nx"></div></div>`;
   if(best!=null&&last[best]){const cv=$("#bc");fit(cv,im,600);paint(cv,im,last[best])}
-  if(!fin){if(host){$("#nx").innerHTML='<button class="btn" id="nb">Nächste Runde</button>';$("#nb").onclick=nextRound}else $("#nx").textContent="Warte auf den Host …"}
+  if(!fin){if(host){$("#nx").innerHTML='<button class="btn" id="nb">Nächste Runde</button>';$("#nb").onclick=nextRound}else $("#nx").textContent="Warte auf den Host …"}else if(hub.cfg.back){$("#nx").innerHTML='<button class="btn" id="nb">Zur Event-Lobby</button>';$("#nb").onclick=hub.cfg.back}
   say(fin?"Spiel beendet.":`Runde ${d.r} von ${R} ausgewertet.`)};
  hub.on("sub",(d,f)=>{if(host&&phase=="edit"){const s=clean(d&&d.s);if(s){subs[f]=s;chk()}}});
  hub.on("votes",(d,f)=>{if(host&&phase=="vote"&&d&&Array.isArray(d.ids)){votes[f]=d.ids.map(Number).filter(Number.isInteger).slice(0,12);if(hub.ids().every(i=>votes[i]))score()}});
@@ -336,54 +365,77 @@ function multi(st,say,hub){
  hub.onleft(()=>{if(phase=="edit")chk();else if(phase=="vote"&&hub.ids().every(i=>votes[i]))score()});
  hub.onclose(()=>say("Der Host hat das Spiel verlassen."));
  if(host)nextRound();else say("Warte auf Runde 1 …");
- return()=>{tm&&tm.stop();hub.stop()};
+ return()=>{tm&&tm.stop()};
 }
 
-function lobby(host){
- const say=s=>$("#st").textContent=s,stg=$("#stage");
- stop&&stop();stop=0;pend&&pend.stop();pend=0;stg.innerHTML="";
- if(!window.Peer)return say("Die Verbindungsbibliothek konnte nicht geladen werden. Prüfe deine Internetverbindung.");
- const nm=($("#pn").value.trim()||"Spieler").slice(0,12),hs=Object.create(null),conns=new Map();
- let names=[nm],peer,link,started=false,onleft=()=>{},onclose=()=>{},me=0;
+let EV=null;
+function evt(host,jc){
+ EV&&EV.leave();
+ const say=t=>{$("#evs").textContent=t},nm=($("#en").value.trim()||"Spieler").slice(0,12),hs=Object.create(null),conns=new Map(),chat=[];
+ let names=[nm],peer,link,me=0,act=new Set([0]),playing=false,gstop=null,sel=0,onleft=()=>{},onclose=()=>{};
  const send=(c,o)=>{try{c.send(JSON.stringify(o))}catch(_){}};
- const hub={on:(t,f)=>(hs[t]=hs[t]||[]).push(f),onleft:f=>{onleft=f},onclose:f=>{onclose=f},ids:()=>[0,...conns.keys()],
-  emit:(t,d)=>{host?conns.forEach(c=>send(c,{t,d,f:0})):send(link,{t,d})},stop:()=>{try{peer.destroy()}catch(_){}}};
+ const hub={on:(t,f)=>(hs[t]=hs[t]||[]).push(f),onleft:f=>{onleft=f},onclose:f=>{onclose=f},
+  ids:()=>[0,...conns.keys()].filter(i=>act.has(i)),emit:(t,d)=>{host?conns.forEach(c=>send(c,{t,d,f:0})):send(link,{t,d})}};
  const disp=(t,d,f)=>(hs[t]||[]).forEach(h=>h(d,f));
- const go=cfg=>{started=true;$("#net").hidden=true;pend=0;hub.cfg={...cfg,me};stop=cur.f(stg,3,say,hub)};
- const list=a=>`<ul id="pl">${a.filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`;
+ const reset=()=>{for(const k in hs)delete hs[k];onleft=()=>{};onclose=()=>{}};
+ const drawChat=()=>{const c=$("#ec");c.innerHTML=chat.map(m=>`<p><b>${esc(m.n)}:</b> ${esc(m.m)}</p>`).join("");c.scrollTop=c.scrollHeight};
+ const addChat=o=>{chat.push(o);if(chat.length>100)chat.shift();drawChat()};
+ const showLobby=()=>{gstop&&gstop();gstop=null;reset();playing=false;act=new Set([0,...conns.keys()]);
+  $("#evl").hidden=false;$("#evgame").hidden=true;
+  $("#evp").innerHTML=names.filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join("");
+  $("#evh").hidden=!host;$("#evw").hidden=host;$("#evw").textContent="Der Host wählt: "+G[sel].n;
+  $("#evgs").innerHTML=G.map((g,i)=>`<button class="opt${i==sel?" right":""}" data-i="${i}">${g.g} ${g.n}</button>`).join("");
+  $("#evset").hidden=!G[sel].mm;$("#evgo").disabled=conns.size<1;drawChat();
+  say(host?(conns.size?"Wähle ein Spiel und starte es.":"Warte auf Mitspieler. Event-Code: "+EV.code):"Du bist im Event. Der Host wählt das Spiel.")};
+ const startGame=cfg=>{reset();playing=true;act=new Set([0,...conns.keys()]);const g=G[cfg.g];
+  $("#evl").hidden=true;$("#evgame").hidden=false;$("#evgame").innerHTML="";
+  hub.cfg={names:names.slice(),R:cfg.R,TL:cfg.TL,me,back:showLobby};say(g.n);
+  gstop=g.f($("#evgame"),g.mm?3:4,say,hub)};
+ EV={code:jc,leave:()=>{gstop&&gstop();try{peer.destroy()}catch(_){}EV=null}};
+ $("#home").hidden=true;$("#ev").hidden=false;$("#evl").hidden=true;$("#evgame").hidden=true;
+ $("#evx").onclick=()=>{EV&&EV.leave();$("#ev").hidden=true;$("#home").hidden=false};
+ $("#rn2").oninput=e=>{$("#rv2").textContent=e.target.value};$("#tl2").oninput=e=>{$("#tv2").textContent=fmt(+e.target.value)};
+ $("#evgs").onclick=e=>{const b=e.target.closest("[data-i]");if(!b||!host||playing)return;sel=+b.dataset.i;conns.forEach(c=>send(c,{t:"sel",d:{g:sel},f:0}));showLobby()};
+ $("#evgo").onclick=()=>{if(!host||playing)return;const cfg={g:sel,R:+$("#rn2").value,TL:+$("#tl2").value};
+  conns.forEach(c=>send(c,{t:"start",d:{...cfg,names},f:0}));startGame(cfg)};
+ $("#es").onclick=()=>{const x=$("#ei").value.trim().slice(0,200);if(!x)return;$("#ei").value="";
+  if(host){const o={n:nm,m:x};addChat(o);conns.forEach(k=>send(k,{t:"chat",d:o,f:0}))}else send(link,{t:"chat",d:x})};
+ $("#ei").onkeydown=e=>{if(e.key=="Enter")$("#es").click()};
+ if(!window.Peer)return say("Die Verbindungsbibliothek konnte nicht geladen werden. Prüfe deine Internetverbindung.");
  if(host){
-  const code=Math.random().toString(36).slice(2,8);peer=new Peer("spielhalle-"+code);pend={stop:hub.stop};
-  stg.innerHTML=`<div class="qz"><p class="q">Raum-Code: ${code}</p><div id="pw"></div><label>Anzahl der Runden: <b id="rv">3</b><input type="range" id="rn" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv">1:00</b><input type="range" id="tl" min="15" max="300" step="15" value="60"></label><button class="btn" id="sg1" disabled>Spiel starten</button></div>`;
-  $("#rn").oninput=e=>{$("#rv").textContent=e.target.value};$("#tl").oninput=e=>{$("#tv").textContent=fmt(+e.target.value)};
-  const roster=()=>{$("#pw").innerHTML="<p>Spieler:</p>"+list(names);$("#sg1").disabled=conns.size<1;conns.forEach(c=>send(c,{t:"roster",d:{names},f:0}))};
-  $("#sg1").onclick=()=>{if(started)return;const cfg={names:names.slice(),R:+$("#rn").value,TL:+$("#tl").value};conns.forEach(c=>send(c,{t:"start",d:cfg,f:0}));go(cfg)};
-  peer.on("open",()=>{say(`Nenne deinen Mitspielern den Raum-Code ${code}. Du startest, sobald alle da sind.`);roster()});
-  peer.on("error",e=>e.type=="unavailable-id"?lobby(true):say("Verbindung nicht möglich. Prüfe deine Internetverbindung."));
+  const code=Math.random().toString(36).slice(2,8);EV.code=code;peer=new Peer("spielhalle-"+code);
+  const roster=()=>{conns.forEach(c=>send(c,{t:"roster",d:{names},f:0}));if(!playing)showLobby()};
+  peer.on("open",()=>{$("#evt").textContent="Event "+code;showLobby()});
+  peer.on("error",e=>e.type=="unavailable-id"?evt(true):say("Verbindung nicht möglich. Prüfe deine Internetverbindung."));
   peer.on("connection",c=>c.on("open",()=>{
-   if(started||conns.size>=11){send(c,{t:"full"});setTimeout(()=>c.close(),400);return}
-   const id=names.length;names.push("Spieler "+id);conns.set(id,c);send(c,{t:"welcome",d:{id}});
+   if(conns.size>=15){send(c,{t:"full"});setTimeout(()=>c.close(),400);return}
+   const id=names.length;names.push("Spieler "+id);conns.set(id,c);if(!playing)act.add(id);
+   send(c,{t:"welcome",d:{id,chat}});
    c.on("data",s=>{try{const m=JSON.parse(s);
-    if(m.t=="name"){names[id]=String(m.d||"").slice(0,12)||names[id];if(!started)roster()}
+    if(m.t=="name"){names[id]=String(m.d||"").slice(0,12)||names[id];roster()}
+    else if(m.t=="chat"){const x=String(m.d||"").slice(0,200);if(x){const o={n:names[id],m:x};addChat(o);conns.forEach(k=>send(k,{t:"chat",d:o,f:0}))}}
     else{disp(m.t,m.d,id);conns.forEach((o,k)=>{if(k!=id)send(o,{t:m.t,d:m.d,f:id})})}}catch(_){}});
-   c.on("close",()=>{conns.delete(id);if(!started){names[id]="";roster()}else onleft(id)});
+   c.on("close",()=>{conns.delete(id);names[id]="";act.delete(id);roster();if(playing)onleft(id)});
    roster()}));
  }else{
-  const ci=$("#code"),b1=$("#b1");$("#pp").hidden=false;$("#s1").textContent="Raum-Code:";ci.value="";ci.readOnly=false;b1.hidden=false;b1.textContent="Beitreten";
-  b1.onclick=()=>{const v=ci.value.trim().toLowerCase();
-   if(!/^[a-z0-9]{3,12}$/.test(v))return say("Der Code besteht aus Buchstaben und Ziffern.");
-   pend&&pend.stop();peer=new Peer();pend={stop:hub.stop};say("Verbinde …");
-   peer.on("error",e=>say(e.type=="peer-unavailable"?"Diesen Raum gibt es nicht. Prüfe den Code.":"Verbindung nicht möglich."));
-   peer.on("open",()=>{link=peer.connect("spielhalle-"+v);
-    link.on("open",()=>{$("#pp").hidden=true;send(link,{t:"name",d:nm});say("Verbunden. Warte, bis der Host das Spiel startet.")});
-    link.on("data",s=>{try{const m=JSON.parse(s);
-     if(m.t=="welcome")me=+m.d.id;
-     else if(m.t=="roster"&&Array.isArray(m.d.names))stg.innerHTML=`<div class="qz"><p class="q">Warteraum</p>${list(m.d.names.map(String))}</div>`;
-     else if(m.t=="start"&&!started){const c=m.d;go({names:c.names.map(String),R:Math.max(1,Math.min(10,+c.R||3)),TL:Math.max(15,Math.min(300,+c.TL||60))})}
-     else if(m.t=="full")say("Der Raum ist voll oder das Spiel läuft schon.");
-     else disp(m.t,m.d,m.f)}catch(_){}});
-    link.on("close",()=>onclose());
-    setTimeout(()=>{if(!link.open)say("Keine Antwort vom Raum. Prüfe den Code oder versuche es erneut.")},12000)})};
+  say("Verbinde …");peer=new Peer();
+  peer.on("error",e=>say(e.type=="peer-unavailable"?"Dieses Event gibt es nicht. Prüfe den Code.":"Verbindung nicht möglich."));
+  peer.on("open",()=>{link=peer.connect("spielhalle-"+jc);
+   link.on("open",()=>{send(link,{t:"name",d:nm});$("#evt").textContent="Event "+jc;showLobby()});
+   link.on("data",s=>{try{const m=JSON.parse(s),d=m.d;
+    if(m.t=="welcome"){me=+d.id;if(Array.isArray(d.chat))d.chat.forEach(o=>chat.push({n:String(o.n||"").slice(0,12),m:String(o.m||"").slice(0,200)}));drawChat()}
+    else if(m.t=="roster"&&d&&Array.isArray(d.names)){names=d.names.map(String);if(!playing)showLobby()}
+    else if(m.t=="chat"&&d)addChat({n:String(d.n||"").slice(0,12),m:String(d.m||"").slice(0,200)});
+    else if(m.t=="sel"&&d&&G[d.g]){sel=+d.g;if(!playing)showLobby()}
+    else if(m.t=="start"&&d&&G[d.g]){if(Array.isArray(d.names))names=d.names.map(String);
+     startGame({g:+d.g,R:Math.max(1,Math.min(10,+d.R||3)),TL:Math.max(15,Math.min(300,+d.TL||60))})}
+    else if(m.t=="full")say("Das Event ist voll.");
+    else disp(m.t,d,m.f)}catch(_){}});
+   link.on("close",()=>{say("Der Host hat das Event beendet.");onclose()});
+   setTimeout(()=>{if(!link.open)say("Keine Antwort. Prüfe den Event-Code.")},12000)});
  }}
+$("#ecr").onclick=()=>evt(true);
+$("#ejo").onclick=()=>{const v=$("#eco").value.trim().toLowerCase();if(/^[a-z0-9]{3,12}$/.test(v))evt(false,v);else $("#eco").focus()};
 </script>
 </body>
 </html>
