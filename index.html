@@ -73,6 +73,17 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 .vb.on::after{content:"✓";font-size:1.1rem}
 .vb:disabled{opacity:.35;cursor:default}
 .rv{width:100%}.rv li{margin:.5rem 0}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{font:inherit;padding:.45rem .9rem;border-radius:999px;border:2px solid var(--ln);background:var(--sf);color:var(--tx);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--p1);border-color:var(--p1);color:var(--on);font-weight:800}
+.cp{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5rem;width:100%}
+.cp figure{margin:0;text-align:center;font-size:.75rem;color:var(--mu)}
+.cp img{width:100%;height:90px;object-fit:cover;border-radius:10px;border:2px solid var(--ln);background:var(--sf)}
+#mu{position:fixed;top:calc(env(safe-area-inset-top,0px) + .5rem);right:.6rem;z-index:30;padding:.3rem .7rem;font-size:1.2rem}
+#cd{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font:800 min(34vw,9rem)/1 "Bricolage Grotesque",system-ui,sans-serif;color:var(--ac);text-shadow:0 3px 0 var(--bg),0 -3px 0 var(--bg),3px 0 0 var(--bg),-3px 0 0 var(--bg);pointer-events:none;z-index:50}
+#cd.pop{animation:cdp .9s ease-out}
+@keyframes cdp{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-50%) scale(.9);opacity:.35}}
+@media (prefers-reduced-motion:reduce){#cd.pop{animation:none}}
 @media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
@@ -107,7 +118,7 @@ canvas{width:100%;max-width:var(--w,500px);height:auto;border-radius:16px;border
 <p id="evs" aria-live="polite"></p>
 <div id="evl" hidden><div class="evg"><div><b>Spieler</b><ul id="evp"></ul>
 <div id="evh" hidden><p><b>Spiel wählen</b></p><div class="opts" id="evgs"></div>
-<div id="evset" class="qz" hidden><label>Anzahl der Runden: <b id="rv2">3</b><input type="range" id="rn2" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv2">1:00</b><input type="range" id="tl2" min="15" max="300" step="15" value="60"></label></div>
+<div id="evset" class="qz" hidden><label>Anzahl der Runden: <b id="rv2">3</b><input type="range" id="rn2" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv2">1:00</b><input type="range" id="tl2" min="15" max="300" step="15" value="60"></label><div id="cats2" style="width:100%"></div></div>
 <div class="bar"><button class="btn" id="evgo">Spiel starten</button></div></div>
 <p id="evw" hidden></p></div>
 <div><b>Chat</b><div class="cl" id="ec"></div><div class="bar"><input class="in" id="ei" maxlength="200" placeholder="Nachricht" aria-label="Nachricht" style="flex:1"><button class="btn" id="es">Senden</button></div></div></div></div>
@@ -146,21 +157,21 @@ const EST={max:100,time:40,
    done(p,`Richtig ist ${a.toLocaleString("de-DE")}. Du lagst ${Math.round(e*100)} Prozent daneben: ${p} Punkte.`,{t:q[0],a:a.toLocaleString("de-DE"),g:n.toLocaleString("de-DE"),p})};
   ok.onclick=()=>go();g.onkeydown=e=>{if(e.key=="Enter")go()};box.onTimeout=()=>go(true);g.focus()}};
 const G=[
-{n:"Flaggenquiz",d:"Erkenne zehn Länder an ihrer Flagge, so schnell du kannst.",h:"Wähle in 15 Sekunden das passende Land: Je schneller du richtig antwortest, desto mehr Punkte gibt es (bis zu 100). Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen und vergleichen am Ende die Punkte. Siehst du nur Buchstaben statt Flaggen, zeigt dein Gerät keine Flaggen-Emojis an.",f:quiz(FLAG),g:"🚩",c:"var(--p1)"},
-{n:"Schätzquiz",d:"Wie hoch, wie lang, wie viele? Je näher und schneller, desto mehr Punkte.",h:"Gib deine Schätzung als Zahl ein. Du hast 40 Sekunden pro Frage und bekommst bis zu 100 Punkte für Genauigkeit und Tempo. Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen.",f:quiz(EST),g:"🎯",c:"var(--p2)"},
-{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden und Zeit ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Wähle oben „Mehrspieler“, um mit anderen zu spielen: Jeder bekommt ein anderes Meme und alle bewerten danach die Memes der anderen (👍 +1000, 😐 +50, 👎 −1000, dazu einmal pro Runde 🥰 +1000). Am Ende könnt ihr alle Memes speichern.",f:meme,g:"😂",c:"var(--ac)",mm:1}];
+{n:"Flaggenquiz",d:"Erkenne zehn Länder an ihrer Flagge, so schnell du kannst.",h:"Wähle in 15 Sekunden das passende Land: Je schneller du richtig antwortest, desto mehr Punkte gibt es (bis zu 100). Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen und vergleichen am Ende die Punkte. Siehst du nur Buchstaben statt Flaggen, zeigt dein Gerät keine Flaggen-Emojis an.",f:quiz(FLAG),mus:"flag",g:"🚩",c:"var(--p1)"},
+{n:"Schätzquiz",d:"Wie hoch, wie lang, wie viele? Je näher und schneller, desto mehr Punkte.",h:"Gib deine Schätzung als Zahl ein. Du hast 40 Sekunden pro Frage und bekommst bis zu 100 Punkte für Genauigkeit und Tempo. Zu zweit antwortet ihr abwechselnd. Online spielen beide dieselben Fragen.",f:quiz(EST),mus:"est",g:"🎯",c:"var(--p2)"},
+{n:"Memegenerator",d:"Stelle Runden und Zeit ein, dann gestaltest du zufällige Memes.",h:"Stelle Runden, Zeit und Kategorien ein. In jeder Runde bekommst du ein zufälliges Meme und kannst es bis zu fünf Mal tauschen. Ziehe die Texte mit Finger oder Maus an die richtige Stelle, füge bei Bedarf Textfelder hinzu und speichere jedes Meme nach der Runde. Wähle oben „Mehrspieler“, um mit anderen zu spielen: Jeder bekommt ein anderes Meme und alle bewerten danach die Memes der anderen (👍 +1000, 😐 +50, 👎 −1000, dazu einmal pro Runde 🥰 +1000). Am Ende könnt ihr alle Memes speichern.",f:meme,mus:"meme",g:"😂",c:"var(--ac)",mm:1}];
 let cur,mode=1,stop,pend;
 $("#grid").innerHTML=G.map((g,i)=>`<button class="card" data-i="${i}" style="--c:${g.c}"><span class="gl">${g.g}</span><b>${g.n}</b><span>${g.d}</span></button>`).join("");
 $("#grid").onclick=e=>{const b=e.target.closest(".card");if(b)open(+b.dataset.i)};
 const seg=document.querySelectorAll(".seg button");
 function open(i){cur=G[i];if(cur.mm)mode=1;seg[1].hidden=!!cur.mm;seg[2].textContent=cur.mm?"Mehrspieler":"Online";seg.forEach(x=>x.setAttribute("aria-pressed",+x.dataset.m==mode));
- $("#t").textContent=cur.n;$("#hint").textContent=cur.h;$("#home").hidden=true;$("#play").hidden=false;scrollTo(0,0);run()}
+ $("#t").textContent=cur.n;$("#hint").textContent=cur.h;$("#home").hidden=true;$("#play").hidden=false;scrollTo(0,0);run();music(cur.mus)}
 function run(code){stop&&stop();stop=0;pend&&pend.stop();pend=0;$("#stage").innerHTML="";$("#net").hidden=mode!=3||!!cur.mm;
  if(mode==3&&cur.mm)return mmForm();
  if(mode==3&&!code){$("#st").textContent="Erstelle einen Raum oder tritt einem bei.";$("#pp").hidden=true;return}
  stop=cur.f($("#stage"),mode,s=>$("#st").textContent=s,code)}
 seg.forEach(b=>b.onclick=()=>{mode=+b.dataset.m;seg.forEach(x=>x.setAttribute("aria-pressed",x==b));run()});
-$("#back").onclick=()=>{stop&&stop();stop=0;$("#play").hidden=true;$("#home").hidden=false};
+$("#back").onclick=()=>{music(null);cdHide();stop&&stop();stop=0;$("#play").hidden=true;$("#home").hidden=false};
 $("#re").onclick=()=>stop&&stop.again?stop.again():run();
 
 $("#mk").onclick=()=>pair(true);$("#jn").onclick=()=>pair(false);
@@ -204,15 +215,15 @@ function quiz(cfg){return(st,m,say,code)=>{
   if(m==1)say(`Fertig! Du hast ${sc[0]} von ${qs.length*cfg.max} Punkten.`);
   else if(m==2)say(sc[0]==sc[1]?`Unentschieden mit ${sc[0]} Punkten!`:`Spieler ${sc[0]>sc[1]?1:2} gewinnt mit ${Math.max(...sc)} zu ${Math.min(...sc)} Punkten.`);
   else if(m==3){mine=sc[0];net.emit("done",{s:mine});result()}else evDone()};
- const ask=()=>{clearInterval(tmr);if(i>=qs.length)return fin();p=m==2?i%2:0;
+ const ask=()=>{clearInterval(tmr);cdHide();if(i>=qs.length)return fin();p=m==2?i%2:0;
   say(m==2?`Frage ${i+1} von ${qs.length}, Spieler ${p+1} ist dran (Stand ${sc[0]} zu ${sc[1]})`:`Frage ${i+1} von ${qs.length}, Punkte: ${sc[0]}`);
   const w=document.createElement("div"),q=document.createElement("div");w.className="tmw";q.className="qz";
   w.innerHTML='<div class="tm"><i></i></div><b class="ts"></b>';box.innerHTML="";box.append(w,q);
   const t0=Date.now(),bar=w.querySelector("i"),lab=w.querySelector("b");let over=false;
   q.left=()=>Math.max(0,1-(Date.now()-t0)/(cfg.time*1000));
-  const tick=tmr=setInterval(()=>{const f=q.left();bar.style.width=f*100+"%";bar.style.background=f<.33?"var(--ac)":"var(--p1)";lab.textContent=Math.ceil(f*cfg.time)+" s";
+  const tick=tmr=setInterval(()=>{const f=q.left();bar.style.width=f*100+"%";bar.style.background=f<.33?"var(--ac)":"var(--p1)";lab.textContent=Math.ceil(f*cfg.time)+" s";{const L=Math.ceil(f*cfg.time);if(L<=5&&f>0)cdShow(L);else cdHide()}
    if(f<=0&&!over){over=true;clearInterval(tick);q.onTimeout&&q.onTimeout()}},100);
-  cfg.show(qs[i],q,(pts,msg,rec)=>{if(rec)recs.push(rec);over=true;clearInterval(tick);sc[p]+=pts;say(msg);
+  cfg.show(qs[i],q,(pts,msg,rec)=>{if(rec)recs.push(rec);cdHide();over=true;clearInterval(tick);sc[p]+=pts;say(msg);
    const b=document.createElement("button");b.className="btn";b.textContent=i+1<qs.length?"Weiter":"Ergebnis";
    b.onclick=()=>{i++;ask()};q.append(b);b.focus()})};
  const begin=k=>{qs=k;i=0;sc=[0,0];mine=other=null;recs=[];ask()};
@@ -226,9 +237,9 @@ function quiz(cfg){return(st,m,say,code)=>{
   hb.on("qs",(x,f)=>{const k=x&&x.q;if(f===0&&hb.cfg.me!=0&&Array.isArray(k)&&k.length&&k.length<=12&&k.every(q=>cfg.ok(q)))begin(k)});
   hb.onclose(()=>say("Der Host hat die Verbindung beendet."));
   if(hb.cfg.me==0){const k=cfg.make();hb.emit("qs",{q:k});begin(k)}else say("Warte auf die ersten Fragen …");
-  return()=>clearInterval(tmr)};
+  return()=>{clearInterval(tmr);cdHide()}};
  if(m==4)return ev4();
- if(m!=3){begin(cfg.make());return()=>clearInterval(tmr)}
+ if(m!=3){begin(cfg.make());return()=>{clearInterval(tmr);cdHide()}}
  net=code;me=net.role;
  const host=()=>{const k=cfg.make();net.emit("qs",{q:k});begin(k)};
  net.on("qs",x=>{const k=x&&x.q;if(me==1&&Array.isArray(k)&&k.length&&k.length<=12&&k.every(q=>cfg.ok(q)))begin(k)});
@@ -255,7 +266,9 @@ const IM=MEMES.map(u=>{const i=new Image();i.src=u;return i});
 const durl=cv=>{try{return cv.toDataURL("image/jpeg",.92)}catch(_){return null}};
 const LUM=im=>{try{const c=document.createElement("canvas");c.width=c.height=16;const x=c.getContext("2d");x.drawImage(im,0,0,16,16);const d=x.getImageData(0,0,16,16).data;let t=0;for(let i=0;i<d.length;i+=4)t+=d[i]*.3+d[i+1]*.6+d[i+2]*.1;return t/256>150?"k":"w"}catch(_){return"w"}};
 const WAIT=MEMES.map(()=>Promise.resolve());
-"30b1gx 1ur9b0 3oevdk 46e43q 22bdq6 5c7lwq 26jxvz 28j0te 23ls 261o3j 2odckz 2fm6x 1c1uej 1ihzfe 3pdf2w 24y43o 54hjww 21uy0f 345v97 9ehk 1otk96 145qvv 26am 1bij 1o00in gtj5t 2xscjb 2za3u1 8d317n 1b42wl 1wz1x 43a45p 1jwhww wxica 2ybua0".split(" ").forEach(id=>{const i=IM.length,u="https://i.imgflip.com/4/"+id+".jpg",im=new Image();IM.push(im);K.push("w");
+const META=[["Tiere", "Schlafender Hund"], ["Entscheidungen & Vergleiche", "Who Would Win"], ["Reaktionen & Gefühle", "Blauer Knopf"], ["Cartoons & Serien", "0 Days Without (Simpsons)"], ["Entscheidungen & Vergleiche", "UNO Draw 25"], ["Entscheidungen & Vergleiche", "Two Buttons"], ["Leere Vorlagen", "My Heart (leer)"], ["Leere Vorlagen", "Grabstein"], ["Leere Vorlagen", "T-Shirt"]].map(([cat,name],i)=>({cat,name,src:MEMES[i]}));
+const TPL=[["30b1gx", "Entscheidungen & Vergleiche", "Drake Hotline Bling"], ["1ur9b0", "Klassiker", "Distracted Boyfriend"], ["3oevdk", "Filme & Promis", "Bernie: Once Again Asking"], ["46e43q", "Klassiker", "Always Has Been"], ["22bdq6", "Entscheidungen & Vergleiche", "Left Exit 12 Off Ramp"], ["5c7lwq", "Filme & Promis", "Anakin Padme 4 Panel"], ["26jxvz", "Entscheidungen & Vergleiche", "Gru's Plan"], ["28j0te", "Entscheidungen & Vergleiche", "Epic Handshake"], ["23ls", "Klassiker", "Disaster Girl"], ["261o3j", "Reaktionen & Gefühle", "Running Away Balloon"], ["2odckz", "Reaktionen & Gefühle", "Marked Safe From"], ["2fm6x", "Reaktionen & Gefühle", "Waiting Skeleton"], ["1c1uej", "Reaktionen & Gefühle", "Sad Pablo Escobar"], ["1ihzfe", "Klassiker", "X, X Everywhere"], ["3pdf2w", "Filme & Promis", "Bernie Sanders Once Again Asking"], ["24y43o", "Klassiker", "Change My Mind"], ["54hjww", "Entscheidungen & Vergleiche", "Trade Offer"], ["21uy0f", "Klassiker", "Y'all Got Any More Of That"], ["345v97", "Tiere", "Woman Yelling At Cat"], ["9ehk", "Cartoons & Serien", "Batman Slapping Robin"], ["1otk96", "Cartoons & Serien", "Mocking Spongebob"], ["145qvv", "Cartoons & Serien", "Squidward window"], ["26am", "Klassiker", "Ancient Aliens"], ["1bij", "Klassiker", "One Does Not Simply"], ["1o00in", "Tiere", "Is This A Pigeon"], ["gtj5t", "Filme & Promis", "Oprah You Get A"], ["2xscjb", "Klassiker", "You Guys are Getting Paid"], ["2za3u1", "Entscheidungen & Vergleiche", "They're The Same Picture"], ["8d317n", "Filme & Promis", "Absolute Cinema"], ["1b42wl", "Reaktionen & Gefühle", "Bike Fall"], ["1wz1x", "Reaktionen & Gefühle", "This Is Where I'd Put My Trophy"], ["43a45p", "Tiere", "Buff Doge vs. Cheems"], ["1jwhww", "Entscheidungen & Vergleiche", "Expanding Brain"], ["wxica", "Reaktionen & Gefühle", "This Is Fine"], ["2ybua0", "Entscheidungen & Vergleiche", "Tuxedo Winnie The Pooh"]];
+TPL.forEach(([id,cat,name])=>{const i=IM.length,u="https://i.imgflip.com/4/"+id+".jpg",im=new Image();IM.push(im);K.push("w");META[i]={cat,name,src:u};
  WAIT[i]=new Promise(res=>{
   im.crossOrigin="anonymous";
   im.onload=()=>{K[i]=LUM(im);res()};
@@ -279,9 +292,9 @@ function paint(cv,im,sp){
 function timer(el,sec,end){
  el.className="tmw st";el.innerHTML='<div class="tm"><i></i></div><b class="ts"></b>';
  const bar=el.querySelector("i"),lab=el.querySelector("b"),t0=Date.now();let done=false;
- const id=setInterval(()=>{const f=Math.max(0,1-(Date.now()-t0)/(sec*1000));bar.style.width=f*100+"%";bar.style.background=f<.2?"var(--ac)":"var(--p1)";lab.textContent=fmt(Math.ceil(f*sec));
+ const id=setInterval(()=>{const f=Math.max(0,1-(Date.now()-t0)/(sec*1000));bar.style.width=f*100+"%";bar.style.background=f<.2?"var(--ac)":"var(--p1)";lab.textContent=fmt(Math.ceil(f*sec));const L=Math.ceil(f*sec);if(L<=5&&f>0)cdShow(L);else cdHide();
   if(f<=0&&!done){done=true;clearInterval(id);end(true)}},200);
- return{stop:()=>{done=true;clearInterval(id)}}}
+ return{stop:()=>{done=true;clearInterval(id);cdHide()}}}
 function editor(st,o){
  st.innerHTML=`<div class="mt"><div id="tb"></div><div class="mm"><canvas id="cv" width="600" height="450"></canvas><div class="ctl" id="cc"><div id="ex" class="ctl"></div><div id="tx" class="ctl"></div><button class="btn" id="ad">Textfeld hinzufügen</button><button class="btn" id="cl"></button><label>Schriftgröße <input type="range" id="sz" min="20" max="90" value="44"></label></div></div></div>`;
  const cv=$("#cv");cv.style.touchAction="none";cv.style.cursor="move";
@@ -309,14 +322,15 @@ function editor(st,o){
 
 function meme(st,m,say,hub){
  if(m==3)return multi(st,say,hub);
- let R,TL,round,deck=[],shots=[],tm,swaps,curT;
+ let R,TL,round,deck=[],shots=[],tm,swaps,curT,pool=[];
  const setup=()=>{tm&&tm.stop();
-  st.innerHTML=`<div class="qz"><p class="q">Einstellungen</p><label>Anzahl der Runden: <b id="rv">3</b><input type="range" id="rn" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv">1:00</b><input type="range" id="tl" min="15" max="300" step="15" value="60"></label><button class="btn" id="go">Starten</button></div>`;
+  st.innerHTML=`<div class="qz"><p class="q">Einstellungen</p><label>Anzahl der Runden: <b id="rv">3</b><input type="range" id="rn" min="1" max="10" value="3"></label><label>Zeit pro Runde: <b id="tv">1:00</b><input type="range" id="tl" min="15" max="300" step="15" value="60"></label><div id="cats" style="width:100%"></div><button class="btn" id="go">Starten</button></div>`;
   $("#rn").oninput=e=>{$("#rv").textContent=e.target.value};
   $("#tl").oninput=e=>{$("#tv").textContent=fmt(+e.target.value)};
-  $("#go").onclick=()=>{R=+$("#rn").value;TL=+$("#tl").value;round=0;shots=[];deck=[];next()};
+  const cu=catUI($("#cats"));
+  $("#go").onclick=()=>{R=+$("#rn").value;TL=+$("#tl").value;round=0;shots=[];deck=[];pool=cu.get();next()};
   say("Stelle Runden und Zeit ein, dann geht es los.")};
- const next=()=>{round++;swaps=5;if(!deck.length)deck=shuffle(IM.map((_,i)=>i));curT=deck.pop();edit()};
+ const next=()=>{round++;swaps=5;if(!deck.length)deck=shuffle(pool);curT=deck.pop();edit()};
  const results=()=>{
   st.innerHTML=`<div class="qz"><p class="q">Deine Memes</p><div class="opts" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${shots.map((u,i)=>`<a href="${u}" download="meme-${i+1}.jpg"><img alt="Meme ${i+1}" src="${u}" style="width:100%;border-radius:12px;border:2px solid var(--ln)"></a>`).join("")}</div><p>Tippe auf ein Bild, um es zu speichern.</p><button class="btn" id="ag">Neue Runden</button></div>`;
   $("#ag").onclick=setup;say("Alle Runden geschafft!")};
@@ -325,7 +339,7 @@ function meme(st,m,say,hub){
   $("#ex").innerHTML=`<button class="btn" id="sw"></button><label class="btn">Eigenes Bild<input type="file" accept="image/*" id="fi" hidden></label><button class="btn" id="dn">Runde beenden</button>`;
   const upd=()=>{const b=$("#sw");b.textContent=swaps?`Anderes Meme (${swaps} übrig)`:"Keine Wechsel mehr übrig";b.disabled=!swaps};
   const show=async i=>{E.set(await getIm(i),K[i])};
-  $("#sw").onclick=()=>{if(swaps<1)return;swaps--;let i;do i=Math.random()*IM.length|0;while(i==curT&&IM.length>1);curT=i;show(i);upd()};
+  $("#sw").onclick=()=>{if(swaps<1)return;swaps--;let i;do i=pool[Math.random()*pool.length|0];while(i==curT&&pool.length>1);curT=i;show(i);upd()};
   $("#fi").onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();
    fr.onload=()=>{const im=new Image();im.onload=()=>{E.im=im;fit(cv,im,Math.min(im.width,700));E.draw()};im.src=fr.result};fr.readAsDataURL(f)};
   let ended=false;
@@ -352,7 +366,7 @@ function multi(st,say,hub){
   for(const i in subs){let p=0;for(const v of P){const x=votes[v];if(!x||v==i)continue;p+=W[x.v[i]]||0;if(x.h==i)p+=1000}pts[i]=p}
   for(const i in pts)total[i]+=pts[i];
   const d={r:round,pts,tot:total};hub.emit("res",d);showRes(d)};
- const nextRound=()=>{tm&&tm.stop();const dk=shuffle(IM.map((_,i)=>i)),t={};hub.ids().forEach((id,k)=>{t[id]=dk[k%dk.length]});tmpl=t;hub.emit("round",{r:round+1,t});startRound(round+1,t)};
+ const nextRound=()=>{tm&&tm.stop();const pl=hub.cfg.pool&&hub.cfg.pool.length?hub.cfg.pool:IM.map((_,i)=>i),dk=shuffle(pl),t={};hub.ids().forEach((id,k)=>{t[id]=dk[k%dk.length]});tmpl=t;hub.emit("round",{r:round+1,t});startRound(round+1,t)};
  const startRound=async(r,t)=>{tm&&tm.stop();round=r;ti=t[me];subs={};votes={};phase="edit";
   const im=await getIm(ti),E=editor(st,{im,col:K[ti]});let sent=false;
   $("#ex").innerHTML='<button class="btn" id="dn">Fertig</button>'+(host?'<button class="btn" id="sk">Sofort weiter</button>':'');
@@ -412,7 +426,43 @@ function multi(st,say,hub){
  return()=>{tm&&tm.stop()};
 }
 
-const mmForm=()=>{
+const CATS=[...new Set(META.map(m=>m.cat))].map(c=>[c,META.map((m,i)=>m.cat==c?i:-1).filter(i=>i>=0)]);
+function catUI(el){
+ const sel=new Set(CATS.map(c=>c[0])),chips=document.createElement("div"),prev=document.createElement("div"),cap=document.createElement("p"),h=document.createElement("p");
+ el.innerHTML="";h.className="q";h.style.fontSize="1.1rem";h.textContent="Kategorien";
+ chips.className="chips";prev.className="cp";cap.style.cssText="margin:.2rem 0;color:var(--mu)";
+ cap.textContent="Tippe auf eine Kategorie, um sie an- oder abzuwählen und alle ihre Memes zu sehen.";
+ CATS.forEach(([c,ix])=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=`${c} (${ix.length})`;b.setAttribute("aria-pressed","true");
+  b.onclick=()=>{if(sel.has(c)&&sel.size>1)sel.delete(c);else sel.add(c);b.setAttribute("aria-pressed",String(sel.has(c)));
+   cap.textContent=`${c}: ${ix.length} Memes, ${sel.has(c)?"ausgewählt":"abgewählt"}.`;
+   prev.innerHTML=ix.map(i=>`<figure><img loading="lazy" src="${META[i].src}" alt="${esc(META[i].name)}"><figcaption>${esc(META[i].name)}</figcaption></figure>`).join("")};
+  chips.append(b)});
+ el.append(h,chips,cap,prev);
+ return{get:()=>CATS.filter(c=>sel.has(c[0])).flatMap(c=>c[1])}}
+
+const AU={ctx:null,out:null,on:true,cur:null,timer:null,step:0,next:0};
+try{AU.on=localStorage.getItem("mu")!="0"}catch(_){}
+const aud=()=>{if(!AU.ctx){try{const C=window.AudioContext||window.webkitAudioContext;AU.ctx=new C();AU.out=AU.ctx.createGain();AU.out.gain.value=.35;AU.out.connect(AU.ctx.destination)}catch(_){return null}}
+ if(AU.ctx.state=="suspended")AU.ctx.resume().catch(()=>{});return AU.ctx};
+const nf=n=>440*Math.pow(2,(n-69)/12);
+const tone=(t,n,d,ty,v)=>{const c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.type=ty;o.frequency.value=nf(n);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AU.out);o.start(t);o.stop(t+d+.02)};
+const kick=t=>{const c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.12);g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.0001,t+.14);o.connect(g);g.connect(AU.out);o.start(t);o.stop(t+.16)};
+const SONGS={
+ flag:{bpm:120,bt:"triangle",mt:"square",bass:[48,0,48,0,55,0,55,0,45,0,45,0,52,0,52,0,41,0,41,0,48,0,48,0,43,0,43,0,50,0,50,0],mel:[72,0,76,0,79,0,76,0,77,0,76,0,72,0,0,0,74,0,77,0,81,0,77,0,79,0,76,0,74,0,0,0]},
+ est:{bpm:96,bt:"sine",mt:"triangle",bass:[45,0,0,0,45,0,0,0,41,0,0,0,41,0,0,0,43,0,0,0,43,0,0,0,40,0,0,0,40,0,0,0],mel:[69,0,72,0,76,0,72,0,65,0,69,0,72,0,69,0,67,0,71,0,74,0,71,0,64,0,67,0,71,0,0,0]},
+ meme:{bpm:108,bt:"sawtooth",mt:"square",bass:[38,0,38,41,0,38,0,36,38,0,38,41,0,43,41,0,34,0,34,38,0,34,0,33,34,0,34,38,0,41,38,0],mel:[62,0,0,65,0,69,0,0,67,0,65,0,62,0,0,0,58,0,0,62,0,65,0,0,64,0,62,0,58,0,0,0]}};
+const sched=()=>{const c=AU.ctx,S=SONGS[AU.cur];if(!c||!S)return;const sd=60/S.bpm/4;
+ if(AU.next<c.currentTime-.2)AU.next=c.currentTime+.05;
+ while(AU.next<c.currentTime+.4){const k=AU.step%32,t=AU.next;
+  if(S.bass[k])tone(t,S.bass[k],sd*1.8,S.bt,.3);if(S.mel[k])tone(t,S.mel[k],sd*1.6,S.mt,.1);
+  if(k%4==0)kick(t);if(k%2==1)tone(t,108,.04,"square",.03);AU.step++;AU.next+=sd}};
+const music=n=>{clearInterval(AU.timer);AU.timer=null;AU.cur=n;if(!n||!AU.on||!aud())return;AU.step=0;AU.next=AU.ctx.currentTime+.1;sched();AU.timer=setInterval(sched,120)};
+const beep=(f,d)=>{if(!AU.on)return;const c=aud();if(!c)return;const t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.frequency.value=f;g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AU.out);o.start(t);o.stop(t+d+.02)};
+let cdN=0;
+function cdShow(n){let e=$("#cd");if(!e){e=document.createElement("div");e.id="cd";e.setAttribute("aria-hidden","true");document.body.append(e)}
+ if(cdN!=n){cdN=n;e.textContent=n;e.className="";void e.offsetWidth;e.className="pop";beep(n==1?880:660,.1)}e.hidden=false}
+function cdHide(){cdN=0;const e=$("#cd");if(e)e.hidden=true}
+const mmForm=() =>{
  $("#stage").innerHTML=`<div class="qz"><p class="q">Mehrspieler</p><input class="in" id="mn" maxlength="12" placeholder="Dein Name" aria-label="Dein Name"><button class="btn" id="mc">Event erstellen</button><input class="in" id="mj" maxlength="12" placeholder="Event-Code" aria-label="Event-Code"><button class="btn" id="mb">Event beitreten</button></div>`;
  $("#st").textContent="Erstelle ein Event oder tritt einem bei. Der Memegenerator ist schon ausgewählt.";
  $("#mc").onclick=()=>{$("#en").value=$("#mn").value;evt(true,0,G.indexOf(cur))};
@@ -429,7 +479,7 @@ function evt(host,jc,pre){
  const reset=()=>{for(const k in hs)delete hs[k];onleft=()=>{};onclose=()=>{}};
  const drawChat=()=>{const c=$("#ec");c.innerHTML=chat.map(m=>`<p><b>${esc(m.n)}:</b> ${esc(m.m)}</p>`).join("");c.scrollTop=c.scrollHeight};
  const addChat=o=>{chat.push(o);if(chat.length>100)chat.shift();drawChat()};
- const showLobby=()=>{gstop&&gstop();gstop=null;reset();playing=false;act=new Set([0,...conns.keys()]);
+ const showLobby=()=>{music(null);cdHide();gstop&&gstop();gstop=null;reset();playing=false;act=new Set([0,...conns.keys()]);
   $("#evl").hidden=false;$("#evgame").hidden=true;
   $("#evp").innerHTML=names.filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join("");
   $("#evh").hidden=!host;$("#evw").hidden=host;$("#evw").textContent="Der Host wählt: "+G[sel].n;
@@ -438,14 +488,15 @@ function evt(host,jc,pre){
   say(host?(conns.size?"Wähle ein Spiel und starte es.":"Warte auf Mitspieler. Event-Code: "+EV.code):"Du bist im Event. Der Host wählt das Spiel.")};
  const startGame=cfg=>{reset();playing=true;act=new Set([0,...conns.keys()]);const g=G[cfg.g];
   $("#evl").hidden=true;$("#evgame").hidden=false;$("#evgame").innerHTML="";
-  hub.cfg={names:names.slice(),R:cfg.R,TL:cfg.TL,me,back:showLobby};say(g.n);
-  gstop=g.f($("#evgame"),g.mm?3:4,say,hub)};
- EV={code:jc,leave:()=>{gstop&&gstop();try{peer.destroy()}catch(_){}EV=null}};
+  hub.cfg={names:names.slice(),R:cfg.R,TL:cfg.TL,pool:cfg.pool,me,back:showLobby};say(g.n);
+  music(g.mus);gstop=g.f($("#evgame"),g.mm?3:4,say,hub)};
+ EV={code:jc,leave:()=>{music(null);cdHide();gstop&&gstop();try{peer.destroy()}catch(_){}EV=null}};
  $("#home").hidden=true;$("#play").hidden=true;$("#ev").hidden=false;$("#evl").hidden=true;$("#evgame").hidden=true;
  $("#evx").onclick=()=>{EV&&EV.leave();$("#ev").hidden=true;$("#home").hidden=false};
+ const cu2=catUI($("#cats2"));
  $("#rn2").oninput=e=>{$("#rv2").textContent=e.target.value};$("#tl2").oninput=e=>{$("#tv2").textContent=fmt(+e.target.value)};
  $("#evgs").onclick=e=>{const b=e.target.closest("[data-i]");if(!b||!host||playing)return;sel=+b.dataset.i;conns.forEach(c=>send(c,{t:"sel",d:{g:sel},f:0}));showLobby()};
- $("#evgo").onclick=()=>{if(!host||playing)return;const cfg={g:sel,R:+$("#rn2").value,TL:+$("#tl2").value};
+ $("#evgo").onclick=()=>{if(!host||playing)return;const cfg={g:sel,R:+$("#rn2").value,TL:+$("#tl2").value,pool:cu2.get()};
   conns.forEach(c=>send(c,{t:"start",d:{...cfg,names},f:0}));startGame(cfg)};
  $("#es").onclick=()=>{const x=$("#ei").value.trim().slice(0,200);if(!x)return;$("#ei").value="";
   if(host){const o={n:nm,m:x};addChat(o);conns.forEach(k=>send(k,{t:"chat",d:o,f:0}))}else send(link,{t:"chat",d:x})};
@@ -484,6 +535,11 @@ function evt(host,jc,pre){
    setTimeout(()=>{if(!link.open)say("Keine Antwort. Prüfe den Event-Code.")},12000)});
  }}
 $("#ecr").onclick=()=>evt(true);
+const mu=document.createElement("button");mu.id="mu";mu.className="btn";mu.type="button";
+const muL=()=>{mu.textContent=AU.on?"🔊":"🔇";mu.setAttribute("aria-label",AU.on?"Musik ausschalten":"Musik einschalten")};muL();
+mu.onclick=()=>{AU.on=!AU.on;try{localStorage.setItem("mu",AU.on?"1":"0")}catch(_){}muL();if(AU.on)music(AU.cur);else{clearInterval(AU.timer);AU.timer=null}};
+document.body.append(mu);
+addEventListener("pointerdown",()=>{if(AU.cur&&AU.on&&!AU.timer)music(AU.cur)},{passive:true});
 $("#ejo").onclick=()=>{const v=$("#eco").value.trim().toLowerCase();if(/^[a-z0-9]{3,12}$/.test(v))evt(false,v);else $("#eco").focus()};
 </script>
 </body>
